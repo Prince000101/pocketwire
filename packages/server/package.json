@@ -1,0 +1,15 @@
+{
+  "name": "@pocketwire/server",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "pocketwire": "./src/cli.ts"
+  },
+  "dependencies": {
+    "@pocketwire/core": "*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13"
+  }
+}

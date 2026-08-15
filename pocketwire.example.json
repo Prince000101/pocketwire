@@ -1,0 +1,19 @@
+{
+  "$comment": "Copy to ~/.config/pocketwire/pocketwire.json and adjust. Tokens can be left empty on first run — a random one is generated and printed by the relay.",
+  "host": "127.0.0.1",
+  "port": 8787,
+  "tokens": [],
+  "pin": "",
+  "ntfy": {
+    "topic": "pocketwire-<your-name>",
+    "server": "https://ntfy.sh"
+  },
+  "skillsDirs": [
+    "$HOME/.agents/skills",
+    "$HOME/.config/opencode/skills",
+    "$HOME/.config/opencode/command"
+  ],
+  "opencode": {
+    "serverUrl": "http://127.0.0.1:4096"
+  }
+}

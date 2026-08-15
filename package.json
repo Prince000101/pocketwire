@@ -1,0 +1,24 @@
+{
+  "name": "pocketwire",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Control and monitor coding agents (opencode, Claude Code, Cursor) from your phone.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx packages/server/src/cli.ts",
+    "start": "tsx packages/server/src/cli.ts",
+    "typecheck": "tsc -p packages/core && tsc -p packages/server",
+    "pocketwire": "tsx packages/server/src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

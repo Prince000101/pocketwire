@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>pocketwire relay</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        background: #0b0e14;
+        color: #d7dae2;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+      main { max-width: 34rem; padding: 2rem; }
+      h1 { font-size: 1.25rem; letter-spacing: 0.02em; }
+      .dot { color: #5fd68a; }
+      code { background: #161b26; padding: 0.15rem 0.4rem; border-radius: 4px; }
+      a { color: #79b8ff; }
+      ul { line-height: 1.7; padding-left: 1.1rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>pocketwire <span class="dot">relay is online</span></h1>
+      <p>This is the placeholder landing page. The full phone control app (live feed, prompts,
+      skills, approvals, screenshots) ships in Phase 2.</p>
+      <ul>
+        <li><a href="/api/status">/api/status</a> (needs your bearer token)</li>
+        <li>Add <code>?token=&lt;your-token&gt;</code> for browser API calls</li>
+      </ul>
+    </main>
+  </body>
+</html>
