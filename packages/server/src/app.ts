@@ -57,11 +57,16 @@ function streamSse(req: IncomingMessage, res: ServerResponse, url: URL, relay: R
     "X-Accel-Buffering": "no",
   });
   res.write("retry: 3000\n\n");
-  const since = url.searchParams.get("since") ?? undefined;
+  const lastEventId = req.headers["last-event-id"];
+  const since = url.searchParams.get("since") ?? (Array.isArray(lastEventId) ? lastEventId[0] : lastEventId) ?? undefined;
   for (const ev of relay.history(since)) {
+    res.write(`id: ${ev.id}\n`);
     res.write(`data: ${JSON.stringify(ev)}\n\n`);
   }
-  const off = relay.bus.on((ev) => res.write(`data: ${JSON.stringify(ev)}\n\n`));
+  const off = relay.bus.on((ev) => {
+    res.write(`id: ${ev.id}\n`);
+    res.write(`data: ${JSON.stringify(ev)}\n\n`);
+  });
   const heartbeat = setInterval(() => res.write(": ping\n\n"), 15000);
   req.on("close", () => {
     clearInterval(heartbeat);

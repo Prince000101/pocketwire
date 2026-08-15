@@ -2,38 +2,75 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0e14" />
-    <title>pocketwire relay</title>
-    <style>
-      :root { color-scheme: dark; }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        background: #0b0e14;
-        color: #d7dae2;
-        display: grid;
-        place-items: center;
-        min-height: 100vh;
-      }
-      main { max-width: 34rem; padding: 2rem; }
-      h1 { font-size: 1.25rem; letter-spacing: 0.02em; }
-      .dot { color: #5fd68a; }
-      code { background: #161b26; padding: 0.15rem 0.4rem; border-radius: 4px; }
-      a { color: #79b8ff; }
-      ul { line-height: 1.7; padding-left: 1.1rem; }
-    </style>
+    <meta name="description" content="Control and monitor coding agents from your phone." />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <title>pocketwire</title>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main>
-      <h1>pocketwire <span class="dot">relay is online</span></h1>
-      <p>This is the placeholder landing page. The full phone control app (live feed, prompts,
-      skills, approvals, screenshots) ships in Phase 2.</p>
-      <ul>
-        <li><a href="/api/status">/api/status</a> (needs your bearer token)</li>
-        <li>Add <code>?token=&lt;your-token&gt;</code> for browser API calls</li>
-      </ul>
-    </main>
+    <header id="topbar">
+      <div class="brand">
+        <span id="status-dot" class="dot off"></span>
+        <span class="name">pocketwire</span>
+        <span id="conn-label" class="conn">connecting</span>
+      </div>
+      <div class="meta">
+        <span id="meta-agent" class="chip">no agent</span>
+        <span id="meta-sessions" class="chip">0 sessions</span>
+        <button id="btn-settings" class="icon-btn" title="Settings">&#8942;</button>
+      </div>
+    </header>
+
+    <main id="feed" aria-live="polite"></main>
+
+    <div id="chips-row">
+      <span id="chips-label">skills</span>
+      <div id="chips"></div>
+    </div>
+
+    <footer id="composer">
+      <div class="actions">
+        <button id="btn-continue" class="btn subtle" title="Nudge the agent">continue</button>
+        <button id="btn-screenshot" class="btn subtle" title="Request a screenshot">shot</button>
+        <button id="btn-abort" class="btn danger" title="Stop the current run">abort</button>
+      </div>
+      <div class="row">
+        <textarea id="input" rows="1" placeholder="Message the agent on your PC…" enterkeyhint="send"></textarea>
+        <button id="btn-send" class="btn primary">send</button>
+      </div>
+    </footer>
+
+    <div id="lightbox" hidden></div>
+
+    <div id="settings" hidden>
+      <div class="sheet">
+        <h2>pocketwire</h2>
+        <label>access token</label>
+        <input id="set-token" type="password" spellcheck="false" />
+        <div class="hint">Token is printed by the relay on startup.</div>
+        <div class="actions">
+          <button id="btn-save" class="btn primary">save</button>
+          <button id="btn-close" class="btn subtle">close</button>
+        </div>
+        <div class="hint faint">
+          Same Wi-Fi: http://&lt;pc-ip&gt;:8787 &middot; Remote: Tailscale URL
+        </div>
+      </div>
+    </div>
+
+    <div id="token-screen" hidden>
+      <div class="card">
+        <h1>pocketwire</h1>
+        <p>Enter the access token printed by the relay when it starts.</p>
+        <input id="tok-input" type="password" placeholder="token" spellcheck="false" />
+        <button id="btn-tok" class="btn primary">connect</button>
+        <div id="tok-error" class="err hidden"></div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
   </body>
 </html>
