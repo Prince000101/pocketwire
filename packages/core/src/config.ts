@@ -14,6 +14,7 @@ export interface PocketwireConfig {
   ntfy?: NtfyConfig;
   skillsDirs: string[];
   dataDir: string;
+  allowCommands?: string[];
   opencode?: { serverUrl?: string };
 }
 

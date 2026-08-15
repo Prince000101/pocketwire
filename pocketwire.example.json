@@ -13,6 +13,7 @@
     "$HOME/.config/opencode/skills",
     "$HOME/.config/opencode/command"
   ],
+  "allowCommands": ["review", "test"],
   "opencode": {
     "serverUrl": "http://127.0.0.1:4096"
   }

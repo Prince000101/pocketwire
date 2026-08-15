@@ -1,0 +1,14 @@
+[Unit]
+Description=pocketwire relay (control coding agents from your phone)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=__REPO__
+ExecStart=__NODE__ __TSX__ packages/server/src/cli.ts
+Restart=on-failure
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=default.target

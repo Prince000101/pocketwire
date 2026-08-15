@@ -161,6 +161,10 @@ async function handleApi(
       json(res, 400, { error: "command is required" });
       return;
     }
+    if (cfg.allowCommands?.length && !cfg.allowCommands.includes(command)) {
+      json(res, 403, { error: `command /${command} is not allowed (see allowCommands in config)` });
+      return;
+    }
     const cmd = relay.enqueueCommand(command, body.args, body.session);
     json(res, 200, { ok: true, id: cmd.id });
     return;

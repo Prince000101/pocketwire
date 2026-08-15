@@ -10,6 +10,32 @@ Control and monitor your coding agents (opencode, Claude Code, Cursor, and more)
 - **Screenshots** — request a capture of the terminal / screen, or forward agent-generated images, straight to your phone.
 - **Private by default** — binds to `127.0.0.1`, exposed only over Tailscale, token + PIN protected.
 
+## Quick start
+
+```bash
+# 1. install
+git clone https://github.com/Prince000101/pocketwire && cd pocketwire
+./scripts/setup.sh        # deps, config (~/.config/pocketwire/pocketwire.json), optional systemd service
+
+# 2. start the agents you want to control
+opencode serve --port 4096     # deep opencode integration
+#   + add the MCP server to opencode (~/.config/opencode/opencode.jsonc):
+#   "pocketwire": { "type": "local", "command": ["node", "/abs/path/pocketwire/node_modules/tsx/dist/cli.mjs", "/abs/path/pocketwire/packages/mcp/src/index.ts"] }
+
+# 3. start the relay
+npm start                       # or: systemctl --user start pocketwire.service
+
+# 4. open the phone app
+#    same Wi-Fi: http://<pc-ip>:8787   ·   remote: https://<tailscale-host>.ts.net (see below)
+#    copy the token from the relay log into the PWA
+```
+
+**Remote access (Tailscale, recommended):** install Tailscale on the PC and your phone, sign into the same tailnet, then run `tailscale serve --bg 8787` (or `tailscale funnel --bg 8787` for public sharing). Open `https://<pc-host>.ts.net` on the phone. The relay still only listens on `127.0.0.1` — Tailscale is the only path in.
+
+**Push alerts (ntfy):** set `"ntfy": { "topic": "<your-topic>" }` in the config (optionally a self-hosted `"server"`). Install [ntfy](https://ntfy.sh) on your phone and subscribe to the topic; the PWA picks up pushes automatically.
+
+**Hardening:** set `"pin"` for a second factor, and limit which slash commands the phone may trigger with `"allowCommands": ["review", "test"]` (unset = all registered commands/skills allowed).
+
 ## Architecture
 
 ```
@@ -37,6 +63,16 @@ Enabled by setting `opencode.serverUrl` in `pocketwire.json` (defaults to `http:
 ### 2. MCP server (any MCP-capable agent)
 A stdio MCP server exposing tools any agent (Claude Code, Cursor, Windsurf, opencode) can call:
 `notify`, `send_output` (short/precise, truncated), `send_screenshot`, `ask_user` (blocks until the phone answers), `get_instruction` (phone steering mid-run), `list_skills`, `report_done`.
+
+Register it with any MCP client, e.g.:
+
+```bash
+# Claude Code
+claude mcp add pocketwire -- node /abs/path/pocketwire/node_modules/tsx/dist/cli.mjs /abs/path/pocketwire/packages/mcp/src/index.ts
+# Cursor / Windsurf: add a stdio MCP server with the same command
+```
+
+The server reads the relay address and bearer token from `~/.config/pocketwire/pocketwire.json` + `~/.pocketwire/.token`, so it works from any project directory once the relay is running.
 
 ### 3. PTY wrapper *(roadmap)*
 `pocketwire run -- claude` — a generic wrapper for plain CLIs with no MCP/server support.

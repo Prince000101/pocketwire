@@ -40,11 +40,12 @@ Live task list. Checked items are merged into `main`.
 - [ ] `claude mcp add` instructions
 
 ## Phase 5 — Ops & hardening
-- [ ] `setup.sh`
-- [ ] systemd user service
-- [ ] Tailscale setup docs
-- [ ] Remote command allowlist
-- [ ] README quick-start complete
+- [x] `setup.sh`
+- [x] systemd user service
+- [x] Tailscale setup docs (README Quick start)
+- [x] Remote command allowlist
+- [x] README quick-start complete
+- [ ] `claude mcp add` one-liner verified on a live agent
 
 ## Phase 6 — Stretch
 - [ ] Telegram bot add-on
