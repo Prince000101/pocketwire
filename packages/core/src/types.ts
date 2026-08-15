@@ -17,7 +17,7 @@ export type EventKind =
   | "screenshot.taken"
   | "system.status";
 
-export type EventSource = "opencode" | "mcp" | "relay" | "wrapper";
+export type EventSource = "opencode" | "mcp" | "relay" | "wrapper" | (string & {});
 
 export interface AgentEventImage {
   data: string;

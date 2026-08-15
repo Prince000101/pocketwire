@@ -19,7 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@pocketwire/core": ["./packages/core/src/index.ts"],
-      "@pocketwire/opencode": ["./packages/adapter-opencode/src/index.ts"]
+      "@pocketwire/opencode": ["./packages/adapter-opencode/src/index.ts"],
+      "@pocketwire/mcp": ["./packages/mcp/src/index.ts"]
     }
   }
 }

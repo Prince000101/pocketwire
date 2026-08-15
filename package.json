@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "tsx packages/server/src/cli.ts",
     "start": "tsx packages/server/src/cli.ts",
-    "typecheck": "tsc -p packages/core && tsc -p packages/adapter-opencode && tsc -p packages/server",
+    "typecheck": "tsc -p packages/core && tsc -p packages/adapter-opencode && tsc -p packages/mcp && tsc -p packages/server",
     "pocketwire": "tsx packages/server/src/cli.ts"
   },
   "devDependencies": {

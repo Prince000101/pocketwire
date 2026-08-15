@@ -70,7 +70,7 @@ docs/
 | 0–1   | Monorepo scaffold + relay core + server + auth + ntfy push | done |
 | 2     | Phone PWA (feed, prompt, skills, actions, approvals, screenshots) | done |
 | 3     | opencode adapter (events, prompt injection, commands, approvals, abort) | done |
-| 4     | MCP server tools, wired into `opencode.jsonc` / `claude mcp add` | todo |
+| 4     | MCP server tools, wired into `opencode.jsonc` / `claude mcp add` | mostly done |
 | 5     | `setup.sh`, systemd service, Tailscale docs, hardening | todo |
 | 6     | Telegram add-on + PTY wrapper for any CLI | stretch |
 

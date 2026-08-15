@@ -35,8 +35,8 @@ Live task list. Checked items are merged into `main`.
 - [ ] Multi-session switcher (auto-selects most recent session today)
 
 ## Phase 4 — MCP server
-- [ ] `notify`, `send_output`, `send_screenshot`, `ask_user`, `get_instruction`, `list_skills`, `report_done`
-- [ ] Register in `opencode.jsonc`
+- [x] `notify`, `send_output`, `send_screenshot`, `ask_user`, `get_instruction`, `list_skills`, `report_done`
+- [x] Registered in `opencode.jsonc`
 - [ ] `claude mcp add` instructions
 
 ## Phase 5 — Ops & hardening

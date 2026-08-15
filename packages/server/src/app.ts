@@ -28,6 +28,12 @@ function json(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
+function clampPriority(value: unknown): 1 | 2 | 3 | 4 | 5 | undefined {
+  const n = Number(value);
+  if (Number.isNaN(n)) return undefined;
+  return Math.max(1, Math.min(5, Math.round(n))) as 1 | 2 | 3 | 4 | 5;
+}
+
 function readJson(req: IncomingMessage): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -176,6 +182,86 @@ async function handleApi(
 
   if (req.method === "POST" && m === "screenshot") {
     relay.emit({ kind: "control.screenshot", source: "relay" });
+    json(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "POST" && m === "notify") {
+    const body = await readJson(req);
+    const message = String(body.message ?? "").trim();
+    if (!message) {
+      json(res, 400, { error: "message is required" });
+      return;
+    }
+    relay.emit(
+      { kind: "agent.output", source: String(body.source ?? "mcp"), title: String(body.title ?? "notification"), message },
+      { title: String(body.title ?? "notification"), message, priority: clampPriority(body.priority), tags: body.tags },
+    );
+    json(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "POST" && m === "output") {
+    const body = await readJson(req);
+    const text = String(body.text ?? "").trim();
+    if (!text) {
+      json(res, 400, { error: "text is required" });
+      return;
+    }
+    const firstLine = text.split("\n").find((l) => l.trim().length > 0)?.slice(0, 200) ?? "";
+    relay.emit({ kind: "agent.output", source: String(body.source ?? "mcp"), title: String(body.title ?? "output"), message: firstLine, detail: text });
+    json(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "POST" && m === "screenshot-from-agent") {
+    const body = await readJson(req);
+    const data = String(body.data ?? "").trim();
+    if (!data) {
+      json(res, 400, { error: "data is required" });
+      return;
+    }
+    relay.emit({
+      kind: "screenshot.taken",
+      source: String(body.source ?? "mcp"),
+      title: "Screenshot from agent",
+      message: String(body.message ?? "agent captured screenshot"),
+      image: { data, mime: String(body.mime ?? "image/png") },
+    });
+    json(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "POST" && m === "ask") {
+    const body = await readJson(req);
+    const question = String(body.question ?? "").trim();
+    if (!question) {
+      json(res, 400, { error: "question is required" });
+      return;
+    }
+    const options = Array.isArray(body.options) && body.options.length > 0 ? body.options.map(String) : ["yes", "no"];
+    try {
+      const resp = await relay.askApproval(String(body.agent ?? "mcp"), question, options);
+      json(res, 200, { ok: true, answer: resp.answer, requestId: resp.requestId });
+    } catch {
+      json(res, 500, { error: "approval failed" });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && m === "instruction/next") {
+    const ins = relay.nextInstruction();
+    json(res, 200, ins ? { instruction: ins.text, session: ins.session } : { instruction: null });
+    return;
+  }
+
+  if (req.method === "POST" && m === "done") {
+    const body = await readJson(req);
+    const message = String(body.message ?? "done").trim();
+    relay.emit(
+      { kind: "agent.done", source: String(body.source ?? "mcp"), title: "Agent done", message },
+      { title: "Agent done", message, priority: 2, tags: ["success"] },
+    );
     json(res, 200, { ok: true });
     return;
   }
