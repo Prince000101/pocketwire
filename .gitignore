@@ -1,0 +1,24 @@
+# deps
+node_modules/
+dist/
+build/
+
+# env & secrets
+.env
+.env.*
+*.pem
+!*.example
+
+# logs & runtime state
+*.log
+data/
+*.sqlite
+*.sqlite-journal
+
+# editors / os
+.DS_Store
+.vscode/
+.idea/
+
+# coverage
+coverage/
