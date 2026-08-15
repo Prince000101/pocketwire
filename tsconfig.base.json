@@ -18,7 +18,8 @@
     "noUnusedParameters": true,
     "baseUrl": ".",
     "paths": {
-      "@pocketwire/core": ["./packages/core/src/index.ts"]
+      "@pocketwire/core": ["./packages/core/src/index.ts"],
+      "@pocketwire/opencode": ["./packages/adapter-opencode/src/index.ts"]
     }
   }
 }

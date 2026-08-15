@@ -10,6 +10,7 @@ export {
   type NtfyConfig,
 } from "./config.js";
 export { EventStore } from "./store.js";
+export { captureScreen, type CapturedImage } from "./capture.js";
 export { Push, type PushMessage } from "./push.js";
 export { listSkills, type SkillInfo } from "./skills.js";
 export { tokenMatches, ensureToken } from "./auth.js";

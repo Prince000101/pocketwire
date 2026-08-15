@@ -29,10 +29,15 @@ export class Relay {
   private approvals = new Map<string, ApprovalRequest>();
   private approvalWaiters = new Map<string, (r: ApprovalResponse) => void>();
   private sources = new Set<string>();
+  private sessionProvider: (() => string[]) | null = null;
 
   constructor(opts: RelayOptions) {
     this.store = new EventStore(opts.dataDir);
     this.push = opts.push;
+  }
+
+  setSessionProvider(fn: () => string[]): void {
+    this.sessionProvider = fn;
   }
 
   emit(input: EmitInput, notify?: PushMessage): AgentEvent {
@@ -56,7 +61,7 @@ export class Relay {
   }
 
   sessions(): string[] {
-    return [];
+    return this.sessionProvider ? this.sessionProvider() : [];
   }
 
   enqueueInstruction(text: string, session?: string): Instruction {

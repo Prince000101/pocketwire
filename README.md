@@ -32,6 +32,8 @@ Connects to the headless `opencode serve` API for:
 - Permission approve/deny from the phone (`/session/:id/permissions/:id`)
 - Abort, todos, and diffs
 
+Enabled by setting `opencode.serverUrl` in `pocketwire.json` (defaults to `http://127.0.0.1:4096`). Start opencode with `opencode serve --port 4096` on the same machine; if a server password is set, export `OPENCODE_SERVER_PASSWORD`. The adapter auto-selects the most recently active session, and events normalize into feed items (text streams, tool runs, approvals, idle/error pushes).
+
 ### 2. MCP server (any MCP-capable agent)
 A stdio MCP server exposing tools any agent (Claude Code, Cursor, Windsurf, opencode) can call:
 `notify`, `send_output` (short/precise, truncated), `send_screenshot`, `ask_user` (blocks until the phone answers), `get_instruction` (phone steering mid-run), `list_skills`, `report_done`.
@@ -65,9 +67,9 @@ docs/
 
 | Phase | What | Status |
 |-------|------|--------|
-| 0–1   | Monorepo scaffold + relay core + server + auth + ntfy push | in progress |
-| 2     | Phone PWA (feed, prompt, skills, actions, approvals, screenshots) | todo |
-| 3     | opencode adapter (events, prompt injection, commands, approvals, abort) | todo |
+| 0–1   | Monorepo scaffold + relay core + server + auth + ntfy push | done |
+| 2     | Phone PWA (feed, prompt, skills, actions, approvals, screenshots) | done |
+| 3     | opencode adapter (events, prompt injection, commands, approvals, abort) | done |
 | 4     | MCP server tools, wired into `opencode.jsonc` / `claude mcp add` | todo |
 | 5     | `setup.sh`, systemd service, Tailscale docs, hardening | todo |
 | 6     | Telegram add-on + PTY wrapper for any CLI | stretch |
