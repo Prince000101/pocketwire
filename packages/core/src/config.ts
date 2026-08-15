@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { resolve } from "node:path";
 
 export interface NtfyConfig {
@@ -18,7 +19,7 @@ export interface PocketwireConfig {
   opencode?: { serverUrl?: string };
 }
 
-const HOME = process.env.HOME ?? ".";
+const HOME = homedir();
 
 export const DEFAULT_DATA_DIR = resolve(HOME, ".pocketwire");
 

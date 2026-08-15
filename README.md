@@ -12,10 +12,14 @@ Control and monitor your coding agents (opencode, Claude Code, Cursor, and more)
 
 ## Quick start
 
+> Runs on **Linux, macOS, and Windows** (Node.js ≥ 22). Screen capture uses the platform tool: `grim`/`import`/`scrot` (Linux), `screencapture` (macOS), or PowerShell (Windows).
+
 ```bash
-# 1. install
+# 1. install (macOS/Linux)
 git clone https://github.com/Prince000101/pocketwire && cd pocketwire
-./scripts/setup.sh        # deps, config (~/.config/pocketwire/pocketwire.json), optional systemd service
+./scripts/setup.sh        # deps, config, optional systemd service
+#    or, on any OS including Windows:
+node scripts/setup.mjs
 
 # 2. start the agents you want to control
 opencode serve --port 4096     # deep opencode integration
@@ -29,6 +33,9 @@ npm start                       # or: systemctl --user start pocketwire.service
 #    same Wi-Fi: http://<pc-ip>:8787   ·   remote: https://<tailscale-host>.ts.net (see below)
 #    copy the token from the relay log into the PWA
 ```
+
+![pocketwire phone app](docs/screenshots/pwa-phone.png)
+
 
 **Remote access (Tailscale, recommended):** install Tailscale on the PC and your phone, sign into the same tailnet, then run `tailscale serve --bg 8787` (or `tailscale funnel --bg 8787` for public sharing). Open `https://<pc-host>.ts.net` on the phone. The relay still only listens on `127.0.0.1` — Tailscale is the only path in.
 
