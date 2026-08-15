@@ -17,6 +17,8 @@ export interface PocketwireConfig {
   dataDir: string;
   allowCommands?: string[];
   opencode?: { serverUrl?: string };
+  /** Public HTTPS URL the phone reaches the relay at, e.g. https://myhost.ts.net. Used for the QR code. */
+  publicUrl?: string;
 }
 
 const HOME = homedir();

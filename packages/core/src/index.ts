@@ -14,6 +14,7 @@ export { captureScreen, type CapturedImage } from "./capture.js";
 export { Push, type PushMessage } from "./push.js";
 export { listSkills, type SkillInfo } from "./skills.js";
 export { tokenMatches, ensureToken } from "./auth.js";
+export { resolvePublicUrl, resolveListenHost } from "./net.js";
 export { Relay, type RelayOptions, type EmitInput } from "./relay.js";
 export type {
   AgentEvent,

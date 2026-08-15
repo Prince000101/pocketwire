@@ -5,6 +5,7 @@ import { extname, resolve } from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { PocketwireConfig, Relay } from "@pocketwire/core";
 import { listSkills, log, tokenMatches, VERSION } from "@pocketwire/core";
+import { pairPageHtml, pairUrl } from "./pair.js";
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -21,6 +22,8 @@ export interface AppOptions {
   relay: Relay;
   cfg: PocketwireConfig;
   webDir?: string;
+  /** Public HTTPS URL the phone reaches the relay at (e.g. https://host.ts.net). Used for the QR pair page. */
+  publicUrl?: string;
 }
 
 function json(res: ServerResponse, status: number, body: unknown): void {
@@ -274,13 +277,28 @@ async function handleApi(
 }
 
 export async function startApp(opts: AppOptions): Promise<{ server: Server }> {
-  const { relay, cfg, webDir } = opts;
+  const { relay, cfg, webDir, publicUrl } = opts;
   const wss = new WebSocketServer({ noServer: true });
 
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Last-Event-ID");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
     void (async () => {
       try {
+        if (url.pathname === "/pair" && req.method === "GET") {
+          const token = cfg.tokens[0] ?? "";
+          const html = await pairPageHtml(pairUrl(token, publicUrl), token);
+          res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(html);
+          return;
+        }
         if (url.pathname.startsWith("/api/")) {
           await handleApi(req, res, url, relay, cfg);
         } else if (webDir) {

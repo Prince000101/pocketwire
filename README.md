@@ -8,6 +8,8 @@ Control and monitor your coding agents (opencode, Claude Code, Cursor, and more)
 - **Approve / deny** — answer permission requests (allow once, always, deny) from the couch.
 - **Skills & slash commands** — browse your available skills (`/systematic-debugging`, superpowers, etc.) and trigger them with a prompt.
 - **Screenshots** — request a capture of the terminal / screen, or forward agent-generated images, straight to your phone.
+- **QR pairing** — scan a code on the PC's pair page (or the terminal) and the phone connects in one tap.
+- **Native Android app** — Capacitor wrapper of the PWA, installable APK (no browser needed).
 - **Private by default** — binds to `127.0.0.1`, exposed only over Tailscale, token + PIN protected.
 
 ## Quick start
@@ -29,15 +31,47 @@ opencode serve --port 4096     # deep opencode integration
 # 3. start the relay
 npm start                       # or: systemctl --user start pocketwire.service
 
-# 4. open the phone app
-#    same Wi-Fi: http://<pc-ip>:8787   ·   remote: https://<tailscale-host>.ts.net (see below)
-#    copy the token from the relay log into the PWA
+# 4. pair your phone
+#    open http://127.0.0.1:8787/pair on the PC and scan the QR —
+#    or install the Android APK and enter the relay URL + token.
 ```
+
+![pocketwire phone app — live feed](docs/screenshots/pwa-phone-feed.png)
 
 ![pocketwire phone app](docs/screenshots/pwa-phone.png)
 
+## Installing on your phone
 
-**Remote access (Tailscale, recommended):** install Tailscale on the PC and your phone, sign into the same tailnet, then run `tailscale serve --bg 8787` (or `tailscale funnel --bg 8787` for public sharing). Open `https://<pc-host>.ts.net` on the phone. The relay still only listens on `127.0.0.1` — Tailscale is the only path in.
+The relay exposes the PWA as an installable web app **and** ships a native Android app.
+
+- **Native Android app (recommended):** on the PC, build the APK and copy it to the phone:
+
+  ```bash
+  cd mobile
+  npm install && npx cap sync android
+  cd android && ./gradlew :app:assembleDebug
+  # APK: android/app/build/outputs/apk/debug/app-debug.apk
+  ```
+
+  Then open the app → enter the **relay URL** (e.g. `http://mypc.tailnet.ts.net:8787`) and the **access token** printed in the relay log. The iOS project is generated on a Mac with `npx cap add ios && npx cap open ios`.
+
+- **Browser / home-screen app:** on the phone open the QR URL, then *Add to Home Screen* (Android Chrome / iOS Safari).
+
+- **QR pairing:** set `publicUrl` in `~/.config/pocketwire/pocketwire.json`, e.g. `"publicUrl": "http://mypc.tailnet.ts.net:8787"`. Restart the relay — it prints a scanable QR in the terminal and on the local-only pair page (`http://127.0.0.1:8787/pair`). If `publicUrl` is unset the relay auto-detects a Tailscale hostname (`http://<host>.ts.net:<port>`).
+
+## Remote access (Tailscale)
+
+Install Tailscale on the PC and your phone and sign into the **same tailnet**. The relay detects the Tailscale interface and binds to it automatically (or set `host` in the config to override). No port forwarding, no `tailscale serve` needed:
+
+```jsonc
+// ~/.config/pocketwire/pocketwire.json
+{
+  "host": "0.0.0.0",              // optional — default auto-detects the Tailscale IP
+  "publicUrl": "http://mypc.tailnet.ts.net:8787"   // optional — enables the QR
+}
+```
+
+With no `host`/`publicUrl` set the relay stays on `127.0.0.1` (local-only) — Tailscale/phone access is opt-in.
 
 **Push alerts (ntfy):** set `"ntfy": { "topic": "<your-topic>" }` in the config (optionally a self-hosted `"server"`). Install [ntfy](https://ntfy.sh) on your phone and subscribe to the topic; the PWA picks up pushes automatically.
 
@@ -47,12 +81,13 @@ npm start                       # or: systemctl --user start pocketwire.service
 
 ```
  Phone                        PC (localhost)                              Coding agents
-┌─────────┐      HTTPS/WS     ┌────────────────────────────────────────┐   ┌─────────────┐
-│ Web PWA │◄─────Tailscale───►│  pocketwire relay                      │◄─►│ opencode     │
-│ +ntfy   │      + token      │  ├─ core: bus · queues · store · auth  │API│  (deep)      │
-│ push    │                   │  ├─ server: HTTP + WS + SSE + PWA      │   │ Claude Code │
-└────┬────┘                   │  ├─ adapter-opencode (serve API)       │   │ Cursor ...  │
-     │ ntfy.sh (alerts)       │  └─ mcp-server (stdio tools) ◄─────────┘   └─────────────┘
+┌─────────┐      HTTP/SSE     ┌────────────────────────────────────────┐   ┌─────────────┐
+│ Web PWA │◄───Tailscale/QR──►│  pocketwire relay                      │◄─►│ opencode     │
+│+Android │      + token      │  ├─ core: bus · queues · store · auth  │API│  (deep)      │
+│ APK     │                   │  ├─ server: HTTP + WS + SSE + PWA + CORS│   │ Claude Code │
+│ +ntfy   │                   │  ├─ adapter-opencode (serve API)       │   │ Cursor ...  │
+└────┬────┘                   │  └─ mcp-server (stdio tools) ◄─────────┘   └─────────────┘
+     │ ntfy.sh (alerts)       │
 ```
 
 The relay speaks three integration dialects so it works with opencode deeply **and** with any other agent:
@@ -96,11 +131,12 @@ The server reads the relay address and bearer token from `~/.config/pocketwire/p
 
 ```
 packages/
-  core/                 # event bus, queues, event store, auth, ntfy push
-  server/               # HTTP + WebSocket + SSE API, serves the PWA
+  core/                 # event bus, queues, event store, auth, ntfy push, net (tailscale/QR)
+  server/               # HTTP + WebSocket + SSE API, CORS, QR pair page, serves the PWA
   adapter-opencode/     # opencode serve API integration
   mcp/                  # MCP server exposing tools to any agent
   web/                  # phone PWA (vanilla JS, installable)
+mobile/                 # Capacitor wrapper: android/ (APK) + ios/ (generated on a Mac)
 docs/
   DESIGN.md             # full design document
   TODO.md               # roadmap / task list
@@ -114,7 +150,7 @@ docs/
 | 2     | Phone PWA (feed, prompt, skills, actions, approvals, screenshots) | done |
 | 3     | opencode adapter (events, prompt injection, commands, approvals, abort) | done |
 | 4     | MCP server tools, wired into `opencode.jsonc` / `claude mcp add` | mostly done |
-| 5     | `setup.sh`, systemd service, Tailscale docs, hardening | todo |
+| 5     | QR pairing + pair page, Tailscale auto-binding, native Android app (Capacitor) | done |
 | 6     | Telegram add-on + PTY wrapper for any CLI | stretch |
 
 ## Security posture

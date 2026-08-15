@@ -23,6 +23,8 @@ Live task list. Checked items are merged into `main`.
 - [x] Approval UI (allow once / always / deny)
 - [x] Screenshot viewer + request button
 - [x] Service worker + manifest (installable)
+- [x] Onboarding + token/session settings, reconnect banner, empty state
+- [x] Run-grouped feed (prompt → outputs/tools → idle), app icons (PNG/SVG)
 - [ ] Session switcher, todos, diff panels (normalized into feed in v0.3)
 
 ## Phase 3 — opencode adapter
@@ -45,6 +47,9 @@ Live task list. Checked items are merged into `main`.
 - [x] Tailscale setup docs (README Quick start)
 - [x] Remote command allowlist
 - [x] README quick-start complete
+- [x] QR pairing (pair page + terminal QR, `publicUrl` config, Tailscale auto-bind + auto URL)
+- [x] Native Android app (Capacitor wrapper, launcher icons, APK build)
+- [x] CORS for the native WebView
 - [ ] `claude mcp add` one-liner verified on a live agent
 
 ## Phase 6 — Stretch

@@ -1,7 +1,8 @@
 import { resolve } from "node:path";
-import { ensureToken, loadConfig, log, Push, Relay, VERSION } from "@pocketwire/core";
+import { ensureToken, loadConfig, log, Push, Relay, resolveListenHost, resolvePublicUrl, VERSION } from "@pocketwire/core";
 import { OpenCodeAdapter } from "@pocketwire/opencode";
 import { startApp } from "./app.js";
+import { pairUrl, terminalQr } from "./pair.js";
 
 const cfg = loadConfig();
 const token = ensureToken(cfg);
@@ -10,8 +11,10 @@ if (cfg.tokens.length === 0) cfg.tokens = [token];
 const push = cfg.ntfy?.topic ? new Push(cfg.ntfy) : undefined;
 const relay = new Relay({ dataDir: cfg.dataDir, push });
 const webDir = resolve(import.meta.dirname, "../../web/public");
+const publicUrl = await resolvePublicUrl(cfg);
+const host = resolveListenHost(cfg);
 
-const { server } = await startApp({ relay, cfg, webDir });
+const { server } = await startApp({ relay, cfg, webDir, publicUrl });
 
 if (cfg.opencode?.serverUrl) {
   new OpenCodeAdapter({
@@ -22,10 +25,20 @@ if (cfg.opencode?.serverUrl) {
   log.info(`opencode adapter connecting to ${cfg.opencode.serverUrl}`);
 }
 
-server.listen(cfg.port, cfg.host, () => {
-  log.info(`pocketwire ${VERSION} listening on http://${cfg.host}:${cfg.port}`);
-  log.info(`phone access token: ${token}`);
+server.listen(cfg.port, host, () => {
+  const url = pairUrl(token, publicUrl);
+  log.info(`pocketwire ${VERSION} listening on http://${host}:${cfg.port}`);
+  log.info(`pair page (this PC): http://127.0.0.1:${cfg.port}/pair`);
+  if (url) {
+    log.info(`scan from phone: ${url}`);
+    terminalQr(url)
+      .then((qr) => console.log(qr))
+      .catch(() => undefined);
+  } else {
+    log.info("no public URL found — set publicUrl in the config (e.g. http://myhost.ts.net:8787) to get a phone QR");
+  }
   if (push) log.info(`ntfy push topic: ${cfg.ntfy!.topic}`);
-  log.info("from phone (same Wi-Fi): http://<pc-ip>:" + cfg.port);
-  log.info("remote via Tailscale: https://<your-tailscale-host>.ts.net or 'tailscale serve'");
+  if (host !== "127.0.0.1") {
+    log.info(`reachable from your tailnet on http://${host}:${cfg.port} — phone and PC must share a tailnet`);
+  }
 });

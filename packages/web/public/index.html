@@ -5,12 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0e14" />
     <meta name="description" content="Control and monitor coding agents from your phone." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="pocketwire" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-180.png" />
     <title>pocketwire</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div id="banner" class="hidden"></div>
+
     <header id="topbar">
       <div class="brand">
         <span id="status-dot" class="dot off"></span>
@@ -18,11 +25,21 @@
         <span id="conn-label" class="conn">connecting</span>
       </div>
       <div class="meta">
+        <button id="btn-sessions" class="chip" title="Choose session">all sessions</button>
         <span id="meta-agent" class="chip">no agent</span>
-        <span id="meta-sessions" class="chip">0 sessions</span>
         <button id="btn-settings" class="icon-btn" title="Settings">&#8942;</button>
       </div>
     </header>
+
+    <div id="empty" class="hidden">
+      <div class="empty-card">
+        <div class="empty-icon">&#128421;&#65039;</div>
+        <h2>No agent connected</h2>
+        <p>Start a coding agent on your PC and it shows up here.</p>
+        <code>opencode serve --port 4096</code>
+        <p class="faint">Then restart pocketwire or wait for it to reconnect.</p>
+      </div>
+    </div>
 
     <main id="feed" aria-live="polite"></main>
 
@@ -45,29 +62,53 @@
 
     <div id="lightbox" hidden></div>
 
+    <div id="approval" hidden>
+      <div class="sheet approval-sheet">
+        <h2>Permission needed</h2>
+        <p id="approval-q" class="approval-q"></p>
+        <div class="btns" id="approval-btns"></div>
+      </div>
+    </div>
+
     <div id="settings" hidden>
       <div class="sheet">
         <h2>pocketwire</h2>
         <label>access token</label>
-        <input id="set-token" type="password" spellcheck="false" />
-        <div class="hint">Token is printed by the relay on startup.</div>
+        <div class="row">
+          <input id="set-token" type="password" spellcheck="false" />
+          <button id="btn-copy-token" class="btn subtle" title="Copy token">copy</button>
+        </div>
+        <label>server</label>
+        <div id="set-server" class="hint faint"></div>
+        <div id="set-server-field" class="field" hidden>
+          <input id="set-server-input" type="url" inputmode="url" spellcheck="false" autocomplete="url" placeholder="http://mypc.tailnet.ts.net:8787" />
+        </div>
+        <label>session</label>
+        <select id="set-session"></select>
         <div class="actions">
           <button id="btn-save" class="btn primary">save</button>
+          <button id="btn-disconnect" class="btn danger">disconnect</button>
           <button id="btn-close" class="btn subtle">close</button>
         </div>
-        <div class="hint faint">
-          Same Wi-Fi: http://&lt;pc-ip&gt;:8787 &middot; Remote: Tailscale URL
-        </div>
+        <div id="pair-hint" class="hint faint">Pair on your PC: open <code>http://127.0.0.1:8787/pair</code> and scan the QR.</div>
       </div>
     </div>
 
-    <div id="token-screen" hidden>
+    <div id="onboard" class="onboard" hidden>
       <div class="card">
         <h1>pocketwire</h1>
-        <p>Enter the access token printed by the relay when it starts.</p>
-        <input id="tok-input" type="password" placeholder="token" spellcheck="false" />
-        <button id="btn-tok" class="btn primary">connect</button>
+        <p class="sub">Control your coding agents from this phone.</p>
+        <div class="steps">
+          <div class="step"><b>1 · Scan the QR</b><span id="onboard-step1">On your PC open <code>http://127.0.0.1:8787/pair</code> and scan the code with this phone's camera — it fills the token automatically.</span></div>
+          <div class="step"><b>2 · …or paste the token</b><span>The relay prints it in the terminal at startup.</span></div>
+        </div>
+        <div id="server-field" class="field" hidden>
+          <input id="server-input" type="url" inputmode="url" placeholder="relay URL  e.g. http://mypc.tailnet.ts.net:8787" spellcheck="false" autocomplete="url" />
+        </div>
+        <input id="tok-input" type="password" placeholder="access token" spellcheck="false" autocomplete="one-time-code" />
+        <button id="btn-tok" class="btn primary block">connect</button>
         <div id="tok-error" class="err hidden"></div>
+        <div class="faint">pocketwire&nbsp;&middot; opencode &amp; friends</div>
       </div>
     </div>
 
