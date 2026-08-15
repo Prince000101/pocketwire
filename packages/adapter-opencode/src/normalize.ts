@@ -6,8 +6,18 @@ function summarize(text: string): string {
   return (line ?? "").trim().slice(0, 160);
 }
 
+const QUIET_MS = 2000;
+
+interface PendingPart {
+  text: string;
+  lastEmitLen: number;
+  lastEmitTs: number;
+  lastPushTs: number;
+  session: string;
+}
+
 export class PartTracker {
-  private parts = new Map<string, { text: string; lastEmitLen: number; lastEmitTs: number }>();
+  private parts = new Map<string, PendingPart>();
 
   push(relay: Relay, part: OcTextPart, delta?: string): void {
     const cur = this.parts.get(part.id);
@@ -20,11 +30,23 @@ export class PartTracker {
       if (ended) {
         this.parts.delete(part.id);
       } else {
-        this.parts.set(part.id, { text, lastEmitLen: text.length, lastEmitTs: now });
+        this.parts.set(part.id, { text, lastEmitLen: text.length, lastEmitTs: now, lastPushTs: now, session: part.sessionID });
       }
       relay.emit({ kind: "agent.output", source: "opencode", session: part.sessionID, message: summarize(text), detail: text });
     } else {
-      this.parts.set(part.id, { text, lastEmitLen: cur?.lastEmitLen ?? 0, lastEmitTs: cur?.lastEmitTs ?? 0 });
+      this.parts.set(part.id, { text, lastEmitLen: cur?.lastEmitLen ?? 0, lastEmitTs: cur?.lastEmitTs ?? 0, lastPushTs: now, session: part.sessionID });
+    }
+  }
+
+  /** Emit any pending part that has gone quiet (no updates for a while) — catches
+   *  short replies whose final part update never carried an end time. */
+  flush(relay: Relay): void {
+    const now = Date.now();
+    for (const [id, cur] of this.parts) {
+      if (now - cur.lastPushTs > QUIET_MS) {
+        this.parts.delete(id);
+        relay.emit({ kind: "agent.output", source: "opencode", session: cur.session, message: summarize(cur.text), detail: cur.text });
+      }
     }
   }
 }

@@ -53,6 +53,7 @@ export class OpenCodeAdapter {
 
   private wireRelay(): void {
     setInterval(() => {
+      this.parts.flush(this.relay);
       const ins = this.relay.nextInstruction();
       if (ins) void this.inject(ins.text, ins.session);
     }, this.pollMs);
