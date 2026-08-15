@@ -15,7 +15,7 @@ export async function pairPageHtml(url: string | undefined, token: string): Prom
   const svg = url ? await QRCode.toString(url, { type: "svg", margin: 2, width: 640, color: { dark: "#d7dae2", light: "#ffffff" } }) : "";
   const qrBlock = url
     ? `<div class="qr">${svg}</div><div class="url">${esc(url)}</div>`
-    : `<div class="warn">No public URL configured. Set <code>publicUrl</code> in <code>~/.config/pocketwire/pocketwire.json</code> (e.g. <code>https://myhost.ts.net</code>) and restart, then reload this page.</div>`;
+    : `<div class="warn">No public URL configured. Set <code>publicUrl</code> in <code>~/.config/pocketwire/pocketwire.json</code> (e.g. <code>http://myhost.tailnet.ts.net:8787</code>) and restart, then reload this page.</div>`;
   return `<!doctype html>
 <html lang="en">
   <head>
