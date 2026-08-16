@@ -1,0 +1,72 @@
+digraph tech_stack {
+  graph [
+    rankdir=TB,
+    splines=spline,
+    bgcolor="#ffffff",
+    pad="0.4", nodesep="0.3", ranksep="0.5",
+    fontname="Helvetica", fontsize="20",
+    label="TECH STACK — every piece of the stack, layer by layer",
+    labelloc=t, labeljust=l
+  ];
+  node [fontname="Helvetica", fontsize=12, shape=box, style="rounded,filled", color="#cbd5e1", penwidth=1.1];
+  edge [fontname="Helvetica", fontsize=11, color="#64748b", penwidth=1.2];
+
+  subgraph cluster_mobile {
+    label="Mobile layer";
+    fontsize=14; fontcolor="#1d4ed8"; color="#93c5fd"; style="rounded,filled"; fillcolor="#eff6ff"; penwidth=2;
+    m_web [label="PWA · vanilla JS (no framework)\nHTML5 · CSS custom properties · SVG icons", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+    m_cap [label="Capacitor 8.5.0 · Android Gradle\n(Java 21 · Android SDK · APK output)", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+    m_pwa [label="Service worker · Web App Manifest\n(installable · offline shell)", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+  }
+
+  subgraph cluster_proto {
+    label="Protocols & transport";
+    fontsize=14; fontcolor="#92400e"; color="#fcd34d"; style="rounded,filled"; fillcolor="#fffbeb"; penwidth=2;
+    p_http [label="HTTP/1.1 · REST JSON\n(POST /api/prompt · approvals · skills)", fillcolor="#fef3c7", fontcolor="#78350f"];
+    p_sse [label="Server-Sent Events (EventSource)\nresumable via Last-Event-ID / ?since=", fillcolor="#fef3c7", fontcolor="#78350f"];
+    p_ws  [label="WebSocket (extensible:\nscreenshots · streaming)", fillcolor="#fef3c7", fontcolor="#78350f"];
+    p_mcp [label="Model Context Protocol (stdio)\nfor any MCP-capable agent", fillcolor="#fef3c7", fontcolor="#78350f"];
+    p_oc  [label="opencode serve HTTP API\n/event SSE · prompt_async · command · permissions", fillcolor="#fef3c7", fontcolor="#78350f"];
+  }
+
+  subgraph cluster_core {
+    label="Server / core layer (Node.js 22)";
+    fontsize=14; fontcolor="#6d28d9"; color="#c4b5fd"; style="rounded,filled"; fillcolor="#f5f3ff"; penwidth=2;
+    c_node [label="Node.js ≥ 22\nTypeScript (strict) · tsx runner · npm workspaces", fillcolor="#ede9fe", fontcolor="#3b0764"];
+    c_http [label="Built-in node:http + WebSocket impl.\nSSE responder · static PWA host", fillcolor="#ede9fe", fontcolor="#3b0764"];
+    c_data [label="In-memory event store + JSON files\n(localStorage on phone)", fillcolor="#ede9fe", fontcolor="#3b0764"];
+    c_sec  [label="bearer tokens · PIN · allowlist\ncrypto.randomUUID event ids", fillcolor="#ede9fe", fontcolor="#3b0764"];
+  }
+
+  subgraph cluster_os {
+    label="Host OS & tooling";
+    fontsize=14; fontcolor="#334155"; color="#94a3b8"; style="rounded,filled"; fillcolor="#f8fafc"; penwidth=2;
+    os1 [label="Linux (dev) · macOS · Windows", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+    os2 [label="screen capture: grim (Wayland) / scrot (X11)\nscreencapture (macOS) · PowerShell (Windows)", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+    os3 [label="optional: ntfy.sh push (cellular)\nTailscale tailnet", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+  }
+
+  subgraph cluster_misc {
+    label="Repo tooling";
+    fontsize=14; fontcolor="#334155"; color="#94a3b8"; style="rounded,filled"; fillcolor="#f8fafc"; penwidth=2;
+    t_lint [label="ESLint · tsc --noEmit (typecheck)\nmock + E2E harness (node scripts)", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+    t_ci   [label="GitHub Actions (CI)\nGitHub for source", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+  }
+
+  m_web -> p_http; m_web -> p_sse; m_web -> p_ws;
+  m_cap -> m_web [style=dashed, dir=none];
+  m_pwa -> m_web [style=dotted];
+
+  p_http -> c_http; p_sse -> c_http; p_ws -> c_http;
+  p_oc -> c_http [style=dotted];
+  p_mcp -> c_node [style=dotted];
+
+  c_http -> c_node; c_data -> c_node; c_sec -> c_node;
+
+  c_node -> os1 [style=dotted];
+  c_http -> os2 [style=dotted];
+  c_node -> os3 [style=dotted];
+
+  t_lint -> c_node [style=dotted, color="#94a3b8"];
+  t_ci -> t_lint [style=dotted];
+}

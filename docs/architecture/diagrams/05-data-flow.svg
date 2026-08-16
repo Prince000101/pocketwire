@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="900" viewBox="0 0 1080 900">
+  <defs>
+    <marker id="arrow-dark" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#dc2626"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#059669"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1080" height="900" fill="#ffffff"/>
+  <text x="40" y="42" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="bold" fill="#0f172a">DATA FLOW — the full round trip</text>
+
+  <!-- lifelines -->
+  <g stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 5">
+    <line x1="200" y1="150" x2="200" y2="880"/>
+    <line x1="470" y1="150" x2="470" y2="880"/>
+    <line x1="740" y1="150" x2="740" y2="880"/>
+    <line x1="1000" y1="150" x2="1000" y2="880"/>
+  </g>
+
+  <!-- actor boxes -->
+  <g font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">
+    <rect x="120"  y="66"  width="160" height="58" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="2"/>
+    <text x="200" y="92" fill="#1e3a8a">PHONE</text>
+    <text x="200" y="112" fill="#1e3a8a" font-size="11" font-weight="normal">PWA + APK + ntfy</text>
+
+    <rect x="385"  y="66"  width="170" height="58" rx="10" fill="#d1fae5" stroke="#6ee7b7" stroke-width="2"/>
+    <text x="470" y="92" fill="#064e3b">RELAY</text>
+    <text x="470" y="112" fill="#064e3b" font-size="11" font-weight="normal">server + core</text>
+
+    <rect x="665"  y="66"  width="150" height="58" rx="10" fill="#cffafe" stroke="#67e8f9" stroke-width="2"/>
+    <text x="740" y="92" fill="#164e63">ADAPTER</text>
+    <text x="740" y="112" fill="#164e63" font-size="11" font-weight="normal">opencode ×N</text>
+
+    <rect x="920"  y="66"  width="160" height="58" rx="10" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+    <text x="1000" y="92" fill="#0f172a">OPENCODE</text>
+    <text x="1000" y="112" fill="#0f172a" font-size="11" font-weight="normal">headless serve</text>
+  </g>
+
+  <g font-family="Helvetica, Arial, sans-serif" font-size="13">
+    <!-- scenario A header -->
+    <text x="40" y="180" font-size="15" font-weight="bold" fill="#0f172a">A · user sends a prompt</text>
+
+    <!-- 1 phone -> relay -->
+    <line x1="210" y1="205" x2="460" y2="205" stroke="#334155" stroke-width="2" marker-end="url(#arrow-dark)"/>
+    <text x="335" y="193" text-anchor="middle" font-weight="bold" fill="#334155">1 · POST /api/prompt {agentId, text}</text>
+
+    <!-- 2 relay -> adapter -->
+    <line x1="480" y1="255" x2="730" y2="255" stroke="#334155" stroke-width="2" marker-end="url(#arrow-dark)"/>
+    <text x="605" y="243" text-anchor="middle" font-weight="bold" fill="#334155">2 · dequeue next instruction</text>
+
+    <!-- 3 adapter -> opencode -->
+    <line x1="750" y1="305" x2="990" y2="305" stroke="#334155" stroke-width="2" marker-end="url(#arrow-dark)"/>
+    <text x="870" y="293" text-anchor="middle" font-weight="bold" fill="#334155">3 · POST /session/:id/prompt_async</text>
+
+    <!-- 4 opencode -> adapter -->
+    <line x1="990" y1="355" x2="750" y2="355" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+    <text x="870" y="343" text-anchor="middle" font-weight="bold" fill="#2563eb">4 · SSE events: step_start · text · tool_run · todo</text>
+
+    <!-- 5 adapter -> relay -->
+    <line x1="730" y1="405" x2="480" y2="405" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+    <text x="605" y="393" text-anchor="middle" font-weight="bold" fill="#2563eb">5 · normalize → agent-tagged feed item</text>
+
+    <!-- 6 relay -> phone -->
+    <line x1="460" y1="455" x2="210" y2="455" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+    <text x="335" y="443" text-anchor="middle" font-weight="bold" fill="#2563eb">6 · SSE: {agentId, type, payload}</text>
+
+    <!-- 7 phone self loop -->
+    <line x1="200" y1="505" x2="250" y2="505" stroke="#2563eb" stroke-width="2"/>
+    <line x1="250" y1="505" x2="250" y2="445" stroke="#2563eb" stroke-width="2"/>
+    <line x1="250" y1="445" x2="210" y2="445" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+    <text x="60" y="482" font-weight="bold" fill="#2563eb">7 · render into that agent's chat</text>
+
+    <!-- scenario B header -->
+    <text x="40" y="560" font-size="15" font-weight="bold" fill="#0f172a">B · approval round-trip</text>
+
+    <!-- 8 opencode -> adapter -->
+    <line x1="990" y1="590" x2="750" y2="590" stroke="#dc2626" stroke-width="2" marker-end="url(#arrow-red)"/>
+    <text x="870" y="578" text-anchor="middle" font-weight="bold" fill="#dc2626">8 · permission.request</text>
+
+    <!-- 9 adapter -> relay -->
+    <line x1="730" y1="640" x2="480" y2="640" stroke="#dc2626" stroke-width="2" marker-end="url(#arrow-red)"/>
+    <text x="605" y="628" text-anchor="middle" font-weight="bold" fill="#dc2626">9 · approval.request {agentId}</text>
+
+    <!-- 10 relay -> phone -->
+    <line x1="460" y1="690" x2="210" y2="690" stroke="#dc2626" stroke-width="2" marker-end="url(#arrow-red)"/>
+    <text x="335" y="678" text-anchor="middle" font-weight="bold" fill="#dc2626">10 · SSE → approval sheet</text>
+    <text x="335" y="698" text-anchor="middle" fill="#dc2626" font-size="11">(Allow once · Always · Deny)</text>
+
+    <!-- 11 phone -> relay -->
+    <line x1="210" y1="750" x2="460" y2="750" stroke="#059669" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <text x="335" y="738" text-anchor="middle" font-weight="bold" fill="#059669">11 · POST /api/approvals/:id {allow}</text>
+
+    <!-- 12 relay -> adapter -->
+    <line x1="480" y1="800" x2="730" y2="800" stroke="#059669" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <text x="605" y="788" text-anchor="middle" font-weight="bold" fill="#059669">12 · forward decision</text>
+
+    <!-- 13 adapter -> opencode -->
+    <line x1="750" y1="850" x2="990" y2="850" stroke="#059669" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <text x="870" y="838" text-anchor="middle" font-weight="bold" fill="#059669">13 · POST /session/:id/permissions/:id {allow}</text>
+  </g>
+</svg>

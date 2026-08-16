@@ -151,6 +151,7 @@ packages/
 mobile/                 # Capacitor wrapper: android/ (APK) + ios/ (generated on a Mac)
 docs/
   DESIGN.md             # full design document
+  architecture/         # ARCHITECTURE.md + diagrams (PNG/SVG/dot)
   TODO.md               # roadmap / task list
 ```
 

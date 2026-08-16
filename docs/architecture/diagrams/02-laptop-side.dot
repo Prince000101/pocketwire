@@ -1,0 +1,82 @@
+digraph laptop_side {
+  graph [
+    rankdir=TB,
+    splines=ortho,
+    bgcolor="#ffffff",
+    pad="0.4", nodesep="0.35", ranksep="0.6",
+    fontname="Helvetica", fontsize="20",
+    label="LAPTOP SIDE — the relay (Node.js) + agent integrations",
+    labelloc=t, labeljust=l
+  ];
+  node [fontname="Helvetica", fontsize=12, shape=box, style="rounded,filled", color="#a7f3d0", penwidth=1.1, fillcolor="#d1fae5", fontcolor="#064e3b"];
+  edge [fontname="Helvetica", fontsize=11, color="#475569", penwidth=1.3];
+
+  /* phone-facing server */
+  subgraph cluster_server {
+    label="packages/server — HTTP server + API";
+    fontsize=15; fontcolor="#0f766e"; color="#5eead4"; style="rounded,filled"; fillcolor="#f0fdfa"; penwidth=2;
+    s_http [label="HTTP API\nREST routes (prompt · approvals · skills)", fillcolor="#ccfbf1"];
+    s_sse  [label="EventSource (SSE)\nGET /api/events?since=<lastId>", fillcolor="#ccfbf1"];
+    s_ws   [label="WebSocket\n(screenshot stream · future live)", fillcolor="#ccfbf1"];
+    s_pair [label="QR pair page  /pair\n+ terminal QR", fillcolor="#ccfbf1"];
+    s_static [label="PWA static files\n(web app · sw.js · manifest)", fillcolor="#ccfbf1"];
+  }
+
+  /* core */
+  subgraph cluster_core {
+    label="packages/core — relay engine";
+    fontsize=15; fontcolor="#6d28d9"; color="#c4b5fd"; style="rounded,filled"; fillcolor="#f5f3ff"; penwidth=2;
+    c_bus   [label="event bus\n(pub / sub · fan-out to phones)", fillcolor="#ede9fe"];
+    c_queue [label="instruction queue\n(per agent)\nprompt · command · ask_user", fillcolor="#ede9fe"];
+    c_store [label="event store\nappend-only · replay via since/id", fillcolor="#ede9fe"];
+    c_auth  [label="auth\nbearer tokens · PIN · sessions", fillcolor="#ede9fe"];
+    c_skills [label="skills\nscan skillsDirs · dedupe by name", fillcolor="#ede9fe"];
+    c_shot  [label="screenshot\nscrot/grim · screen capture", fillcolor="#ede9fe"];
+    c_ntfy  [label="ntfy push\nshort summaries over cellular", fillcolor="#ede9fe"];
+  }
+
+  /* adapters */
+  subgraph cluster_adapters {
+    label="packages/adapter-opencode — one adapter per configured agent";
+    fontsize=15; fontcolor="#0e7490"; color="#67e8f9"; style="rounded,filled"; fillcolor="#ecfeff"; penwidth=2;
+    a_ev [label="/event SSE listener\nnormalize → agent-tagged feed items", fillcolor="#cffafe"];
+    a_pr [label="prompt injection\n/session/:id/prompt_async", fillcolor="#cffafe"];
+    a_cmd [label="commands + skills\n/session/:id/command", fillcolor="#cffafe"];
+    a_perm [label="approve / deny\n/session/:id/permissions/:id", fillcolor="#cffafe"];
+  }
+
+  /* agents */
+  subgraph cluster_agents {
+    label="Agent processes (headless) — one per chat";
+    fontsize=15; fontcolor="#334155"; color="#94a3b8"; style="rounded,filled"; fillcolor="#f8fafc"; penwidth=2;
+    g1 [label="opencode serve\n--port 4096", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+    g2 [label="opencode serve\n--port 4097", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+    g3 [label="other agent / CLI\n(roadmap: PTY wrapper)", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+  }
+
+  /* MCP */
+  mcp [label="packages/mcp — stdio MCP server\nnotify · send_output · ask_user\nget_instruction · list_skills · report_done", shape=box, style="rounded,filled", fillcolor="#fce7f3", fontcolor="#831843", color="#f9a8d4", fontsize=12];
+
+  /* layout edges */
+  s_http -> c_bus; s_http -> c_auth; s_http -> c_queue;
+  s_sse -> c_store [dir=both, label="tail + replay", color="#10b981"];
+  s_ws -> c_shot [dir=both, style=dotted];
+  s_pair -> c_auth [style=dotted];
+  s_static -> s_pair [style=invis];
+
+  c_bus -> c_store [style=dotted, dir=both];
+  c_queue -> a_pr [label="next prompt", color="#0891b2"];
+  c_queue -> a_cmd [color="#0891b2"];
+  c_skills -> a_cmd [style=dotted, label="trigger slash cmd"];
+  c_ntfy -> s_sse [style=invis];
+
+  a_ev -> c_bus [label="agent-tagged events", color="#10b981"];
+  a_perm -> c_bus [label="approval results", color="#10b981"];
+  a_pr -> g1 [dir=both, style=dashed, color="#64748b"];
+  a_cmd -> g2 [dir=both, style=dashed, color="#64748b"];
+  a_ev -> g1 [style=invis];
+  a_ev -> g2 [style=invis];
+  a_ev -> g3 [dir=both, style=dashed, color="#64748b"];
+
+  mcp -> c_bus [dir=both, style=dotted, label="agent tool calls"];
+}

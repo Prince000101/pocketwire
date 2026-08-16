@@ -1,0 +1,59 @@
+digraph system_overview {
+  graph [
+    rankdir=LR,
+    splines=ortho,
+    bgcolor="#ffffff",
+    pad="0.4", nodesep="0.35", ranksep="0.8",
+    fontname="Helvetica", fontsize="20",
+    label="pocketwire — end-to-end system overview",
+    labelloc=t,
+    labeljust=l
+  ];
+  node [fontname="Helvetica", fontsize=13, shape=box, style="rounded,filled", color="#cbd5e1", penwidth=1.2];
+  edge [fontname="Helvetica", fontsize=11, color="#64748b", penwidth=1.4];
+
+  /* ---------------- MOBILE ---------------- */
+  subgraph cluster_mobile {
+    label="MOBILE SIDE — your phone";
+    fontsize=16; fontcolor="#2563eb"; color="#93c5fd"; style="rounded,filled"; fillcolor="#eff6ff"; penwidth=2;
+    m_ui [label="Web UI (PWA)\nvanilla JS · HTML · CSS\nchat list + per-agent chat", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+    m_cap [label="Native Android app\nCapacitor wrapper\n(APK)", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+    m_ntfy [label="ntfy app\npush notifications", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+    m_store [label="localStorage\nsession token · theme", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+  }
+
+  /* ---------------- CONNECTION ---------------- */
+  subgraph cluster_conn {
+    label="CONNECTION SIDE — how they meet";
+    fontsize=16; fontcolor="#d97706"; color="#fcd34d"; style="rounded,filled"; fillcolor="#fffbeb"; penwidth=2;
+    c_pair [label="Pairing\ntoken link + QR\nhttp://10.121.251.1:8787/pair", fillcolor="#fef3c7", fontcolor="#78350f"];
+    c_tail [label="Transport\nTailscale tailnet (or LAN)\nHTTP · EventSource (SSE) · WS", fillcolor="#fef3c7", fontcolor="#78350f"];
+    c_auth [label="Auth\nbearer token · optional PIN\n(paired sessions)", fillcolor="#fef3c7", fontcolor="#78350f"];
+  }
+
+  /* ---------------- LAPTOP ---------------- */
+  subgraph cluster_lap {
+    label="LAPTOP SIDE — the relay + your agents";
+    fontsize=16; fontcolor="#059669"; color="#6ee7b7"; style="rounded,filled"; fillcolor="#ecfdf5"; penwidth=2;
+    l_http [label="HTTP / WS / SSE API\n+ QR pair page + PWA host", fillcolor="#d1fae5", fontcolor="#064e3b"];
+    l_adapters [label="opencode adapter × N\none per configured agent\n(event normalize · prompts · approvals)", fillcolor="#d1fae5", fontcolor="#064e3b"];
+    l_core [label="relay core\nbus · queues · event store · auth\nskills · screenshot · ntfy push", fillcolor="#ddd6fe", fontcolor="#3b0764"];
+    l_agent [label="opencode serve\n(local agent sessions)", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+    l_mcp [label="MCP server (stdio)\nnotify · ask_user · get_instruction · list_skills", fillcolor="#d1fae5", fontcolor="#064e3b"];
+  }
+
+  m_ui -> c_pair [label="scan QR / open pair link", color="#f59e0b"];
+  m_ui -> c_tail [label="SSE stream + HTTP commands", color="#f59e0b"];
+  m_ntfy -> c_tail [label="topic push", style=dashed, color="#94a3b8"];
+  c_pair -> c_auth [style=invis];
+  c_tail -> c_auth [label="exchange token", color="#f59e0b"];
+
+  m_store -> m_ui [label="token · theme", style=dotted, dir=none, color="#64748b"];
+
+  c_auth -> l_http [label="HTTPS/WS/SSE", color="#10b981"];
+  l_http -> l_core [dir=both];
+  l_http -> l_adapters [label="route by agent id", color="#10b981"];
+  l_core -> l_adapters [dir=both, style=dotted];
+  l_adapters -> l_agent [dir=both, label="opencode serve API /event SSE", color="#10b981"];
+  l_mcp -> l_core [dir=both, style=dotted];
+}

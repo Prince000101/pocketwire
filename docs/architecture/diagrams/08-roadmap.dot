@@ -1,0 +1,53 @@
+digraph roadmap {
+  graph [
+    rankdir=LR,
+    splines=spline,
+    bgcolor="#ffffff",
+    pad="0.4", nodesep="0.35", ranksep="0.7",
+    fontname="Helvetica", fontsize="20",
+    label="ROADMAP — future ideas, grouped by theme",
+    labelloc=t, labeljust=l
+  ];
+  node [fontname="Helvetica", fontsize=12, shape=box, style="rounded,filled", color="#cbd5e1", penwidth=1.1];
+  edge [fontname="Helvetica", fontsize=11, color="#94a3b8", penwidth=1.2, style=dotted];
+
+  done [label="shipped ✓\nmulti-agent relay · WhatsApp-style UI\nthemes · QR pairing · approvals · skills\nAPK · MCP server · ntfy", fillcolor="#d1fae5", fontcolor="#064e3b", style="rounded,filled", color="#6ee7b7"];
+
+  subgraph cluster_agents {
+    label="More agent integrations";
+    fontsize=14; fontcolor="#0f766e"; color="#5eead4"; style="rounded,filled"; fillcolor="#f0fdfa"; penwidth=2;
+    f_pty [label="PTY wrapper\npocketwire run -- claude\n(any CLI agent)", fillcolor="#ccfbf1"];
+    f_cursor [label="Claude Code / Cursor / Windsurf\nvia MCP (exists) or native adapter", fillcolor="#ccfbf1"];
+    f_multi [label="nested agents → threads\nturn agents into sub-tasks of a chat", fillcolor="#ccfbf1"];
+  }
+
+  subgraph cluster_conn {
+    label="Smarter transport & sync";
+    fontsize=14; fontcolor="#92400e"; color="#fcd34d"; style="rounded,filled"; fillcolor="#fffbeb"; penwidth=2;
+    f_offline [label="offline queue\nphone sends while disconnected\nrelay drains on reconnect", fillcolor="#fef3c7"];
+    f_ws [label="full WebSocket streaming\nlive typing · diffs · terminal", fillcolor="#fef3c7"];
+    f_push [label="Web Push (native) + richer ntfy\nper-chat mute · urgency routing", fillcolor="#fef3c7"];
+  }
+
+  subgraph cluster_mobile {
+    label="Richer phone UX";
+    fontsize=14; fontcolor="#1d4ed8"; color="#93c5fd"; style="rounded,filled"; fillcolor="#eff6ff"; penwidth=2;
+    f_voice [label="voice input\nsend prompts by talking", fillcolor="#dbeafe"];
+    f_media [label="attach images / files\nagent sees them in-context", fillcolor="#dbeafe"];
+    f_dark [label="per-chat theming · bubble themes\nreactions · message search", fillcolor="#dbeafe"];
+  }
+
+  subgraph cluster_ops {
+    label="Multi-user & ops";
+    fontsize=14; fontcolor="#334155"; color="#94a3b8"; style="rounded,filled"; fillcolor="#f8fafc"; penwidth=2;
+    f_multiacc [label="multi-tenant auth\ninvite links · per-phone ACLs · audit log", fillcolor="#e2e8f0"];
+    f_sync [label="cloud sync / relay mode\nagents anywhere, phone anywhere", fillcolor="#e2e8f0"];
+    f_enc [label="end-to-end encryption\non top of token auth", fillcolor="#e2e8f0"];
+    f_telegram [label="Telegram add-on\nagent chats inside Telegram", fillcolor="#e2e8f0"];
+  }
+
+  done -> f_pty; done -> f_offline; done -> f_voice; done -> f_multiacc;
+  f_pty -> f_cursor; f_offline -> f_ws; f_voice -> f_media;
+  f_multiacc -> f_sync; f_multiacc -> f_enc; f_ws -> f_push;
+  f_media -> f_dark; f_sync -> f_telegram;
+}
