@@ -45,6 +45,7 @@ export interface Instruction {
   text: string;
   source: "phone" | "telegram";
   session?: string;
+  agent?: string;
 }
 
 export interface CommandRequest {
@@ -53,6 +54,7 @@ export interface CommandRequest {
   command: string;
   args?: string[];
   session?: string;
+  agent?: string;
 }
 
 export interface ApprovalRequest {

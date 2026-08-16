@@ -4,10 +4,12 @@ export { log, Logger, type LogLevel } from "./logger.js";
 export {
   loadConfig,
   configPath,
+  resolveAgents,
   DEFAULT_DATA_DIR,
   ensureDataDir,
   type PocketwireConfig,
   type NtfyConfig,
+  type AgentConfig,
 } from "./config.js";
 export { EventStore } from "./store.js";
 export { captureScreen, type CapturedImage } from "./capture.js";

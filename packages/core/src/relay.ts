@@ -29,15 +29,15 @@ export class Relay {
   private approvals = new Map<string, ApprovalRequest>();
   private approvalWaiters = new Map<string, (r: ApprovalResponse) => void>();
   private sources = new Set<string>();
-  private sessionProvider: (() => string[]) | null = null;
+  private sessionProviders = new Map<string, () => string[]>();
 
   constructor(opts: RelayOptions) {
     this.store = new EventStore(opts.dataDir);
     this.push = opts.push;
   }
 
-  setSessionProvider(fn: () => string[]): void {
-    this.sessionProvider = fn;
+  setSessionProvider(agent: string, fn: () => string[]): void {
+    this.sessionProviders.set(agent, fn);
   }
 
   emit(input: EmitInput, notify?: PushMessage): AgentEvent {
@@ -60,42 +60,53 @@ export class Relay {
     return [...this.sources];
   }
 
-  sessions(): string[] {
-    return this.sessionProvider ? this.sessionProvider() : [];
+  sessions(agent?: string): string[] {
+    if (agent) return this.sessionProviders.get(agent)?.() ?? [];
+    return [...this.sessionProviders.values()].flatMap((fn) => fn());
   }
 
-  enqueueInstruction(text: string, session?: string): Instruction {
-    const ins: Instruction = { id: randomUUID(), ts: Date.now(), text, source: "phone", session };
+  sessionProvidersList(): { agent: string; sessions: string[] }[] {
+    return [...this.sessionProviders.entries()].map(([agent, fn]) => ({ agent, sessions: fn() }));
+  }
+
+  enqueueInstruction(text: string, session?: string, agent?: string): Instruction {
+    const ins: Instruction = { id: randomUUID(), ts: Date.now(), text, source: "phone", session, agent };
     this.instructions.push(ins);
     this.emit({
       kind: "instruction.received",
       source: "relay",
       session,
+      agent,
       title: "New instruction from phone",
       message: text,
     });
     return ins;
   }
 
-  nextInstruction(): Instruction | undefined {
-    return this.instructions.shift();
+  nextInstruction(agent?: string): Instruction | undefined {
+    const idx = this.instructions.findIndex((i) => !i.agent || !agent || i.agent === agent);
+    if (idx === -1) return undefined;
+    return this.instructions.splice(idx, 1)[0];
   }
 
-  enqueueCommand(command: string, args?: string[], session?: string): CommandRequest {
-    const cmd: CommandRequest = { id: randomUUID(), ts: Date.now(), command, args, session };
+  enqueueCommand(command: string, args?: string[], session?: string, agent?: string): CommandRequest {
+    const cmd: CommandRequest = { id: randomUUID(), ts: Date.now(), command, args, session, agent };
     this.commands.push(cmd);
     this.emit({
       kind: "command.request",
       source: "relay",
       session,
+      agent,
       title: "Command from phone",
       message: `/${command}${args?.length ? " " + args.join(" ") : ""}`,
     });
     return cmd;
   }
 
-  nextCommand(): CommandRequest | undefined {
-    return this.commands.shift();
+  nextCommand(agent?: string): CommandRequest | undefined {
+    const idx = this.commands.findIndex((c) => !c.agent || !agent || c.agent === agent);
+    if (idx === -1) return undefined;
+    return this.commands.splice(idx, 1)[0];
   }
 
   askApproval(

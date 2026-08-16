@@ -19,7 +19,7 @@ interface PendingPart {
 export class PartTracker {
   private parts = new Map<string, PendingPart>();
 
-  push(relay: Relay, part: OcTextPart, delta?: string): void {
+  push(relay: Relay, part: OcTextPart, delta?: string, agent = "opencode"): void {
     const cur = this.parts.get(part.id);
     const text = (cur?.text ?? "") + (delta ?? (part.text ?? ""));
     const ended = part.time?.end != null || part.ignored === true || delta === undefined;
@@ -32,7 +32,7 @@ export class PartTracker {
       } else {
         this.parts.set(part.id, { text, lastEmitLen: text.length, lastEmitTs: now, lastPushTs: now, session: part.sessionID });
       }
-      relay.emit({ kind: "agent.output", source: "opencode", session: part.sessionID, message: summarize(text), detail: text });
+      relay.emit({ kind: "agent.output", source: agent, agent, session: part.sessionID, message: summarize(text), detail: text });
     } else {
       this.parts.set(part.id, { text, lastEmitLen: cur?.lastEmitLen ?? 0, lastEmitTs: cur?.lastEmitTs ?? 0, lastPushTs: now, session: part.sessionID });
     }
@@ -40,22 +40,23 @@ export class PartTracker {
 
   /** Emit any pending part that has gone quiet (no updates for a while) — catches
    *  short replies whose final part update never carried an end time. */
-  flush(relay: Relay): void {
+  flush(relay: Relay, agent = "opencode"): void {
     const now = Date.now();
     for (const [id, cur] of this.parts) {
       if (now - cur.lastPushTs > QUIET_MS) {
         this.parts.delete(id);
-        relay.emit({ kind: "agent.output", source: "opencode", session: cur.session, message: summarize(cur.text), detail: cur.text });
+        relay.emit({ kind: "agent.output", source: agent, agent, session: cur.session, message: summarize(cur.text), detail: cur.text });
       }
     }
   }
 }
 
-export function handleToolPart(relay: Relay, part: OcToolPart): void {
+export function handleToolPart(relay: Relay, part: OcToolPart, agent = "opencode"): void {
   if (part.status === "error") {
     relay.emit({
       kind: "agent.error",
-      source: "opencode",
+      source: agent,
+      agent,
       session: part.sessionID,
       title: `${part.tool} failed`,
       message: (part.error ?? "").slice(0, 300),
@@ -66,7 +67,8 @@ export function handleToolPart(relay: Relay, part: OcToolPart): void {
   if (part.status === "completed") {
     relay.emit({
       kind: "agent.tool",
-      source: "opencode",
+      source: agent,
+      agent,
       session: part.sessionID,
       title: part.title ?? part.tool,
       message: `ran ${part.tool}`,
@@ -78,7 +80,8 @@ export function handleToolPart(relay: Relay, part: OcToolPart): void {
   if (part.status === "running") {
     relay.emit({
       kind: "agent.step",
-      source: "opencode",
+      source: agent,
+      agent,
       session: part.sessionID,
       title: part.title ?? part.tool,
       message: `running ${part.tool}`,
@@ -86,31 +89,32 @@ export function handleToolPart(relay: Relay, part: OcToolPart): void {
   }
 }
 
-export function handleStepPart(relay: Relay, part: OcStepPart): void {
+export function handleStepPart(relay: Relay, part: OcStepPart, agent = "opencode"): void {
   const text = part.description ?? part.agent ?? part.type;
-  relay.emit({ kind: "agent.step", source: "opencode", session: part.sessionID, message: text });
+  relay.emit({ kind: "agent.step", source: agent, agent, session: part.sessionID, message: text });
 }
 
-export function handleReasoningPart(relay: Relay, part: OcReasoningPart): void {
+export function handleReasoningPart(relay: Relay, part: OcReasoningPart, agent = "opencode"): void {
   const text = (part.text ?? "").slice(0, 200);
-  if (text) relay.emit({ kind: "agent.step", source: "opencode", session: part.sessionID, message: `thinking: ${text}` });
+  if (text) relay.emit({ kind: "agent.step", source: agent, agent, session: part.sessionID, message: `thinking: ${text}` });
 }
 
-export function approvalInput(event: OcEvent): EmitInput[] | undefined {
+export function approvalInput(event: OcEvent, agent = "opencode"): EmitInput[] | undefined {
   switch (event.type) {
     case "session.status":
-      return [{ kind: "agent.step", source: "opencode", session: event.properties.sessionID, message: `session ${event.properties.status?.type ?? ""}` }];
+      return [{ kind: "agent.step", source: agent, agent, session: event.properties.sessionID, message: `session ${event.properties.status?.type ?? ""}` }];
     case "session.diff":
       return [
         {
           kind: "agent.step",
-          source: "opencode",
+          source: agent,
+          agent,
           session: event.properties.sessionID,
           message: `diff: ${event.properties.files ?? 0} files, +${event.properties.additions ?? 0} -${event.properties.deletions ?? 0}`,
         },
       ];
     case "todo.updated":
-      return [{ kind: "agent.step", source: "opencode", session: event.properties.sessionID, message: `todos updated (${event.properties.todos?.length ?? 0})` }];
+      return [{ kind: "agent.step", source: agent, agent, session: event.properties.sessionID, message: `todos updated (${event.properties.todos?.length ?? 0})` }];
     default:
       return undefined;
   }

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { extname, resolve } from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
-import type { PocketwireConfig, Relay } from "@pocketwire/core";
+import type { AgentConfig, PocketwireConfig, Relay } from "@pocketwire/core";
 import { listSkills, log, tokenMatches, VERSION } from "@pocketwire/core";
 import { pairPageHtml, pairUrl } from "./pair.js";
 
@@ -24,6 +24,8 @@ export interface AppOptions {
   webDir?: string;
   /** Public HTTPS URL the phone reaches the relay at (e.g. https://host.ts.net). Used for the QR pair page. */
   publicUrl?: string;
+  /** Resolved agent list. */
+  agents?: AgentConfig[];
 }
 
 function json(res: ServerResponse, status: number, body: unknown): void {
@@ -35,6 +37,12 @@ function clampPriority(value: unknown): 1 | 2 | 3 | 4 | 5 | undefined {
   const n = Number(value);
   if (Number.isNaN(n)) return undefined;
   return Math.max(1, Math.min(5, Math.round(n))) as 1 | 2 | 3 | 4 | 5;
+}
+
+function pickAgent(agents: AgentConfig[], requested?: unknown): string | undefined {
+  if (!requested) return agents[0]?.id;
+  const found = agents.find((a) => a.id === String(requested));
+  return found ? found.id : agents[0]?.id;
 }
 
 function readJson(req: IncomingMessage): Promise<Record<string, any>> {
@@ -67,7 +75,7 @@ function streamSse(req: IncomingMessage, res: ServerResponse, url: URL, relay: R
   });
   res.write("retry: 3000\n\n");
   const lastEventId = req.headers["last-event-id"];
-  const since = url.searchParams.get("since") ?? (Array.isArray(lastEventId) ? lastEventId[0] : lastEventId) ?? undefined;
+  const since = (Array.isArray(lastEventId) ? lastEventId[0] : lastEventId) ?? url.searchParams.get("since") ?? undefined;
   for (const ev of relay.history(since)) {
     res.write(`id: ${ev.id}\n`);
     res.write(`data: ${JSON.stringify(ev)}\n\n`);
@@ -105,6 +113,7 @@ async function handleApi(
   url: URL,
   relay: Relay,
   cfg: PocketwireConfig,
+  agents: AgentConfig[] = [],
 ): Promise<void> {
   if (!authorize(req, url.searchParams, cfg)) {
     json(res, 401, { error: "unauthorized" });
@@ -114,10 +123,17 @@ async function handleApi(
   const m = url.pathname.slice("/api/".length);
 
   if (req.method === "GET" && m === "status") {
+    const sessionsByAgent = new Map(relay.sessionProvidersList().map((s) => [s.agent, s.sessions]));
+    const agentList = agents.map((a) => ({
+      id: a.id,
+      name: a.name,
+      kind: a.kind,
+      sessions: sessionsByAgent.get(a.id) ?? [],
+    }));
     json(res, 200, {
       ok: true,
       version: VERSION,
-      agents: relay.sourcesList(),
+      agents: agentList,
       sessions: relay.sessions(),
       skills: listSkills(cfg.skillsDirs).length,
       ntfy: Boolean(cfg.ntfy?.topic),
@@ -152,8 +168,9 @@ async function handleApi(
       json(res, 400, { error: "text is required" });
       return;
     }
-    const ins = relay.enqueueInstruction(text, body.session);
-    json(res, 200, { ok: true, id: ins.id });
+    const agent = pickAgent(agents, body.agent);
+    const ins = relay.enqueueInstruction(text, body.session, agent);
+    json(res, 200, { ok: true, id: ins.id, agent });
     return;
   }
 
@@ -168,8 +185,9 @@ async function handleApi(
       json(res, 403, { error: `command /${command} is not allowed (see allowCommands in config)` });
       return;
     }
-    const cmd = relay.enqueueCommand(command, body.args, body.session);
-    json(res, 200, { ok: true, id: cmd.id });
+    const agent = pickAgent(agents, body.agent);
+    const cmd = relay.enqueueCommand(command, body.args, body.session, agent);
+    json(res, 200, { ok: true, id: cmd.id, agent });
     return;
   }
 
@@ -182,13 +200,15 @@ async function handleApi(
   }
 
   if (req.method === "POST" && m === "abort") {
-    relay.emit({ kind: "control.abort", source: "relay" });
+    const body = await readJson(req);
+    relay.emit({ kind: "control.abort", source: "relay", agent: pickAgent(agents, body.agent) });
     json(res, 200, { ok: true });
     return;
   }
 
   if (req.method === "POST" && m === "screenshot") {
-    relay.emit({ kind: "control.screenshot", source: "relay" });
+    const body = await readJson(req);
+    relay.emit({ kind: "control.screenshot", source: "relay", agent: pickAgent(agents, body.agent) });
     json(res, 200, { ok: true });
     return;
   }
@@ -257,8 +277,8 @@ async function handleApi(
   }
 
   if (req.method === "GET" && m === "instruction/next") {
-    const ins = relay.nextInstruction();
-    json(res, 200, ins ? { instruction: ins.text, session: ins.session } : { instruction: null });
+    const ins = relay.nextInstruction(url.searchParams.get("agent") ?? undefined);
+    json(res, 200, ins ? { instruction: ins.text, session: ins.session, agent: ins.agent } : { instruction: null });
     return;
   }
 
@@ -277,7 +297,7 @@ async function handleApi(
 }
 
 export async function startApp(opts: AppOptions): Promise<{ server: Server }> {
-  const { relay, cfg, webDir, publicUrl } = opts;
+  const { relay, cfg, webDir, publicUrl, agents } = opts;
   const wss = new WebSocketServer({ noServer: true });
 
   const server = createServer((req, res) => {
@@ -300,7 +320,7 @@ export async function startApp(opts: AppOptions): Promise<{ server: Server }> {
           return;
         }
         if (url.pathname.startsWith("/api/")) {
-          await handleApi(req, res, url, relay, cfg);
+          await handleApi(req, res, url, relay, cfg, agents ?? []);
         } else if (webDir) {
           await serveStatic(res, url.pathname, webDir);
         } else {

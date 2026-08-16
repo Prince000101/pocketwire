@@ -1,4 +1,4 @@
-const CACHE = "pocketwire-v2";
+const CACHE = "pocketwire-v3";
 const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", (event) => {

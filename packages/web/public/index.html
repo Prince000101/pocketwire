@@ -3,66 +3,133 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b0e14" />
     <meta name="description" content="Control and monitor coding agents from your phone." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="pocketwire" />
+    <meta name="theme-color" content="#0b0e14" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-180.png" />
     <title>pocketwire</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("pocketwire.theme") || "auto";
+          var dark = t === "dark" || (t === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.content = dark ? "#0b0e14" : "#f5f6f8";
+        } catch (e) {}
+      })();
+    </script>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div id="banner" class="hidden"></div>
 
-    <header id="topbar">
-      <div class="brand">
-        <span id="status-dot" class="dot off"></span>
-        <span class="name">pocketwire</span>
-        <span id="conn-label" class="conn">connecting</span>
+    <!-- chats list -->
+    <div id="chats-view" class="view">
+      <header class="topbar">
+        <div class="brand">
+          <span class="logo">PW</span>
+          <span class="name">pocketwire</span>
+        </div>
+        <div class="meta">
+          <button id="btn-add-server" class="icon-btn" title="Add a laptop">+</button>
+          <button id="btn-settings" class="icon-btn" title="Settings">&#8942;</button>
+        </div>
+      </header>
+      <div id="chats-empty" class="list-empty">
+        <div class="empty-icon">&#128241;</div>
+        <h2>No agents yet</h2>
+        <p>Run the relay on any laptop, then pair this phone like WhatsApp — scan the QR or paste the pair link.</p>
+        <button id="btn-pair-cta" class="btn primary block">pair a laptop</button>
+        <p class="faint">On the laptop: <code>npm start</code> &middot; then open <code>/pair</code> and scan with this phone.</p>
       </div>
-      <div class="meta">
-        <button id="btn-sessions" class="chip" title="Choose session">all sessions</button>
-        <span id="meta-agent" class="chip">no agent</span>
-        <button id="btn-settings" class="icon-btn" title="Settings">&#8942;</button>
-      </div>
-    </header>
-
-    <div id="empty" class="hidden">
-      <div class="empty-card">
-        <div class="empty-icon">&#128421;&#65039;</div>
-        <h2>No agent connected</h2>
-        <p>Start a coding agent on your PC and it shows up here.</p>
-        <code>opencode serve --port 4096</code>
-        <p class="faint">Then restart pocketwire or wait for it to reconnect.</p>
-      </div>
+      <ul id="chat-list" class="chat-list"></ul>
     </div>
 
-    <main id="feed" aria-live="polite"></main>
-
-    <div id="chips-row">
-      <span id="chips-label">skills</span>
-      <div id="chips"></div>
+    <!-- chat -->
+    <div id="chat-view" class="view hidden">
+      <header class="topbar">
+        <button id="btn-back" class="icon-btn" title="Back">&#8592;</button>
+        <div class="chat-title">
+          <span id="chat-avatar" class="avatar">O</span>
+          <div class="chat-title-text">
+            <span id="chat-name">agent</span>
+            <span id="chat-status" class="chat-status">connecting</span>
+          </div>
+        </div>
+        <button id="btn-chat-more" class="icon-btn" title="Session">&#8943;</button>
+      </header>
+      <main id="feed" class="feed" aria-live="polite"></main>
+      <div id="chat-empty" class="chat-empty hidden">
+        <p>Say hello — messages land in the agent's terminal on your PC.</p>
+      </div>
+      <footer id="composer">
+        <div class="actions">
+          <button id="btn-skills" class="btn subtle" title="Run a skill">&#47;&#47; skills</button>
+          <button id="btn-continue" class="btn subtle" title="Nudge the agent">continue</button>
+          <button id="btn-screenshot" class="btn subtle" title="Request a screenshot">shot</button>
+          <button id="btn-abort" class="btn danger" title="Stop the current run">abort</button>
+        </div>
+        <div class="row">
+          <textarea id="input" rows="1" placeholder="Message the agent…" enterkeyhint="send"></textarea>
+          <button id="btn-send" class="btn primary">send</button>
+        </div>
+      </footer>
     </div>
-
-    <footer id="composer">
-      <div class="actions">
-        <button id="btn-continue" class="btn subtle" title="Nudge the agent">continue</button>
-        <button id="btn-screenshot" class="btn subtle" title="Request a screenshot">shot</button>
-        <button id="btn-abort" class="btn danger" title="Stop the current run">abort</button>
-      </div>
-      <div class="row">
-        <textarea id="input" rows="1" placeholder="Message the agent on your PC…" enterkeyhint="send"></textarea>
-        <button id="btn-send" class="btn primary">send</button>
-      </div>
-    </footer>
 
     <div id="lightbox" hidden></div>
 
-    <div id="approval" hidden>
+    <!-- skills sheet -->
+    <div id="skills-sheet" class="sheet-wrap" hidden>
+      <div class="backdrop" data-close="skills-sheet"></div>
+      <div class="sheet">
+        <div class="sheet-head">
+          <h2>skills</h2>
+          <button id="btn-skills-close" class="icon-btn" title="Close">&#215;</button>
+        </div>
+        <input id="skills-search" class="search" type="search" placeholder="search skills&hellip;" spellcheck="false" />
+        <div id="skills-list" class="skills-list"></div>
+      </div>
+    </div>
+
+    <!-- settings sheet -->
+    <div id="settings" class="sheet-wrap" hidden>
+      <div class="backdrop" data-close="settings"></div>
+      <div class="sheet">
+        <div class="sheet-head">
+          <h2>settings</h2>
+          <button id="btn-close" class="icon-btn" title="Close">&#215;</button>
+        </div>
+        <label>theme</label>
+        <div class="seg" id="theme-seg">
+          <button data-theme="light">light</button>
+          <button data-theme="dark">dark</button>
+          <button data-theme="auto">auto</button>
+        </div>
+        <label>laptops</label>
+        <div id="servers-list" class="servers-list"></div>
+        <div id="add-server" class="field hidden">
+          <input id="set-pair-link" type="text" placeholder="pair link e.g. http://192.168.1.10:8787/pair?token=abc" spellcheck="false" autocomplete="url" />
+          <button id="btn-add-server-save" class="btn primary block">add laptop</button>
+        </div>
+        <label>session</label>
+        <select id="set-session"></select>
+        <div class="hint faint">auto uses the most recent session for the open agent.</div>
+        <div class="actions">
+          <button id="btn-save" class="btn primary">save</button>
+          <button id="btn-disconnect" class="btn danger">remove</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- approval -->
+    <div id="approval" class="sheet-wrap" hidden>
+      <div class="backdrop"></div>
       <div class="sheet approval-sheet">
         <h2>Permission needed</h2>
         <p id="approval-q" class="approval-q"></p>
@@ -70,45 +137,19 @@
       </div>
     </div>
 
-    <div id="settings" hidden>
-      <div class="sheet">
-        <h2>pocketwire</h2>
-        <label>access token</label>
-        <div class="row">
-          <input id="set-token" type="password" spellcheck="false" />
-          <button id="btn-copy-token" class="btn subtle" title="Copy token">copy</button>
-        </div>
-        <label>server</label>
-        <div id="set-server" class="hint faint"></div>
-        <div id="set-server-field" class="field" hidden>
-          <input id="set-server-input" type="url" inputmode="url" spellcheck="false" autocomplete="url" placeholder="http://mypc.tailnet.ts.net:8787" />
-        </div>
-        <label>session</label>
-        <select id="set-session"></select>
-        <div class="actions">
-          <button id="btn-save" class="btn primary">save</button>
-          <button id="btn-disconnect" class="btn danger">disconnect</button>
-          <button id="btn-close" class="btn subtle">close</button>
-        </div>
-        <div id="pair-hint" class="hint faint">Pair on your PC: open <code>http://127.0.0.1:8787/pair</code> and scan the QR.</div>
-      </div>
-    </div>
-
+    <!-- onboard / pair -->
     <div id="onboard" class="onboard" hidden>
       <div class="card">
         <h1>pocketwire</h1>
-        <p class="sub">Control your coding agents from this phone.</p>
+        <p class="sub">Your coding agents, one chat each.</p>
         <div class="steps">
-          <div class="step"><b>1 · Scan the QR</b><span id="onboard-step1">On your PC open <code>http://127.0.0.1:8787/pair</code> and scan the code with this phone's camera — it fills the token automatically.</span></div>
-          <div class="step"><b>2 · …or paste the token</b><span>The relay prints it in the terminal at startup.</span></div>
+          <div class="step"><b>1 &middot; Copy the pair link</b><span>On your laptop run <code>npm start</code>. It prints a QR + a pair link (like WhatsApp).</span></div>
+          <div class="step"><b>2 &middot; Paste it here</b><span>This app connects to every laptop you pair.</span></div>
         </div>
-        <div id="server-field" class="field" hidden>
-          <input id="server-input" type="url" inputmode="url" placeholder="relay URL  e.g. http://mypc.tailnet.ts.net:8787" spellcheck="false" autocomplete="url" />
-        </div>
-        <input id="tok-input" type="password" placeholder="access token" spellcheck="false" autocomplete="one-time-code" />
-        <button id="btn-tok" class="btn primary block">connect</button>
-        <div id="tok-error" class="err hidden"></div>
-        <div class="faint">pocketwire&nbsp;&middot; opencode &amp; friends</div>
+        <input id="pair-input" type="text" placeholder="pair link e.g. http://192.168.1.10:8787/pair?token=abc" spellcheck="false" autocomplete="url" />
+        <button id="btn-pair" class="btn primary block">connect</button>
+        <div id="pair-error" class="err hidden"></div>
+        <div class="faint">pocketwire &middot; opencode &amp; friends</div>
       </div>
     </div>
 

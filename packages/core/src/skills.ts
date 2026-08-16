@@ -18,6 +18,7 @@ function firstLine(text: string): string | undefined {
 
 export function listSkills(dirs: string[]): SkillInfo[] {
   const out: SkillInfo[] = [];
+  const seen = new Set<string>();
   for (const dir of dirs) {
     if (!existsSync(dir)) continue;
     const isCommandDir = dir.endsWith("command");
@@ -32,9 +33,11 @@ export function listSkills(dirs: string[]): SkillInfo[] {
       } catch {
         continue;
       }
+      if (seen.has(entry)) continue;
       if (isDir) {
         const skillFile = resolve(p, "SKILL.md");
         if (existsSync(skillFile)) {
+          seen.add(entry);
           out.push({
             name: entry,
             description: firstLine(readFileSync(skillFile, "utf8")),
@@ -43,8 +46,11 @@ export function listSkills(dirs: string[]): SkillInfo[] {
           });
         }
       } else if (isCommandDir && isFile && entry.endsWith(".md")) {
+        const name = entry.replace(/\.md$/, "");
+        if (seen.has(name)) continue;
+        seen.add(name);
         out.push({
-          name: entry.replace(/\.md$/, ""),
+          name,
           description: firstLine(readFileSync(p, "utf8")),
           path: p,
           source: "command",

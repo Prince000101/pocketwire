@@ -60,7 +60,7 @@ export async function pairPageHtml(url: string | undefined, token: string): Prom
           <li>Your phone and this PC must be on the same <b>Tailscale tailnet</b> — no port forwarding needed. If you changed the port, set <code>publicUrl</code> in the config to match.</li>
         </ol>
       </div>
-      <div class="faint">pocketwire ${VERSION} — this page is local-only (127.0.0.1).</div>
+      <div class="faint">pocketwire ${VERSION} — open this page on your phone, or run it on this PC and scan the QR.</div>
     </div>
     <script>
       const b = document.getElementById("copy");

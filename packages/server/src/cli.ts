@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { ensureToken, loadConfig, log, Push, Relay, resolveListenHost, resolvePublicUrl, VERSION } from "@pocketwire/core";
+import { ensureToken, loadConfig, log, Push, Relay, resolveAgents, resolveListenHost, resolvePublicUrl, VERSION } from "@pocketwire/core";
 import { OpenCodeAdapter } from "@pocketwire/opencode";
 import { startApp } from "./app.js";
 import { pairUrl, terminalQr } from "./pair.js";
@@ -14,16 +14,18 @@ const webDir = resolve(import.meta.dirname, "../../web/public");
 const publicUrl = await resolvePublicUrl(cfg);
 const host = resolveListenHost(cfg);
 
-const { server } = await startApp({ relay, cfg, webDir, publicUrl });
-
-if (cfg.opencode?.serverUrl) {
+const agents = resolveAgents(cfg);
+for (const agent of agents) {
   new OpenCodeAdapter({
     relay,
-    serverUrl: cfg.opencode.serverUrl,
-    password: process.env.OPENCODE_SERVER_PASSWORD,
+    agent: agent.id,
+    serverUrl: agent.serverUrl,
+    password: agent.password ?? process.env.OPENCODE_SERVER_PASSWORD,
   }).start();
-  log.info(`opencode adapter connecting to ${cfg.opencode.serverUrl}`);
+  log.info(`adapter [${agent.id}] (${agent.name}) connecting to ${agent.serverUrl}`);
 }
+
+const { server } = await startApp({ relay, cfg, webDir, publicUrl, agents });
 
 server.listen(cfg.port, host, () => {
   const url = pairUrl(token, publicUrl);

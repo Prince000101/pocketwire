@@ -18,6 +18,8 @@ export interface OpenCodeAdapterOptions {
   serverUrl?: string;
   password?: string;
   pollMs?: number;
+  /** Agent id this adapter represents (events are tagged with it). Defaults to "opencode". */
+  agent?: string;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -28,6 +30,7 @@ export class OpenCodeAdapter {
   private readonly relay: Relay;
   private readonly client: OpenCodeClient;
   private readonly pollMs: number;
+  private readonly agent: string;
   private readonly parts = new PartTracker();
   private stopped = false;
   private connected = false;
@@ -36,13 +39,14 @@ export class OpenCodeAdapter {
 
   constructor(opts: OpenCodeAdapterOptions) {
     this.relay = opts.relay;
+    this.agent = opts.agent ?? "opencode";
     this.client = new OpenCodeClient(opts.serverUrl ?? "http://127.0.0.1:4096", opts.password);
     this.pollMs = opts.pollMs ?? 500;
   }
 
   start(): void {
-    this.relay.registerSource("opencode");
-    this.relay.setSessionProvider(() => this.sessionList.map((s) => s.id));
+    this.relay.registerSource(this.agent);
+    this.relay.setSessionProvider(this.agent, () => this.sessionList.map((s) => s.id));
     this.wireRelay();
     void this.run();
   }
@@ -53,21 +57,21 @@ export class OpenCodeAdapter {
 
   private wireRelay(): void {
     setInterval(() => {
-      this.parts.flush(this.relay);
-      const ins = this.relay.nextInstruction();
+      this.parts.flush(this.relay, this.agent);
+      const ins = this.relay.nextInstruction(this.agent);
       if (ins) void this.inject(ins.text, ins.session);
     }, this.pollMs);
 
     setInterval(() => {
-      const cmd = this.relay.nextCommand();
+      const cmd = this.relay.nextCommand(this.agent);
       if (cmd) void this.invokeCommand(cmd.command, cmd.args?.join(" ") ?? "", cmd.session);
     }, this.pollMs);
 
     this.relay.bus.on((ev) => {
-      if (ev.kind === "control.abort") {
+      if (ev.kind === "control.abort" && (!ev.agent || ev.agent === this.agent)) {
         const id = this.currentSession;
         if (id) void this.client.abort(id);
-      } else if (ev.kind === "control.screenshot") {
+      } else if (ev.kind === "control.screenshot" && (!ev.agent || ev.agent === this.agent)) {
         void this.screenshot();
       }
     });
@@ -76,12 +80,13 @@ export class OpenCodeAdapter {
   private async screenshot(): Promise<void> {
     const shot = await captureScreen();
     if (!shot) {
-      this.relay.emit({ kind: "agent.error", source: "opencode", title: "Screenshot failed", message: "no capture tool (grim/import/scrot) available" });
+      this.relay.emit({ kind: "agent.error", source: this.agent, agent: this.agent, title: "Screenshot failed", message: "no capture tool (grim/import/scrot) available" });
       return;
     }
     this.relay.emit({
       kind: "screenshot.taken",
-      source: "opencode",
+      source: this.agent,
+      agent: this.agent,
       title: "Screenshot from screen",
       message: "captured screen",
       image: { data: shot.data, mime: shot.mime },
@@ -91,26 +96,26 @@ export class OpenCodeAdapter {
   private async inject(text: string, session?: string): Promise<void> {
     const id = await this.resolveSession(session);
     if (!id) {
-      this.relay.emit({ kind: "agent.error", source: "opencode", title: "No active session", message: "cannot inject prompt: no opencode session" });
+      this.relay.emit({ kind: "agent.error", source: this.agent, agent: this.agent, title: "No active session", message: "cannot inject prompt: no opencode session" });
       return;
     }
     try {
       await this.client.promptAsync(id, text);
     } catch (e) {
-      this.relay.emit({ kind: "agent.error", source: "opencode", title: "Prompt injection failed", message: errMsg(e) });
+      this.relay.emit({ kind: "agent.error", source: this.agent, agent: this.agent, title: "Prompt injection failed", message: errMsg(e) });
     }
   }
 
   private async invokeCommand(command: string, args: string, session?: string): Promise<void> {
     const id = await this.resolveSession(session);
     if (!id) {
-      this.relay.emit({ kind: "agent.error", source: "opencode", title: "No active session", message: `cannot run /${command}: no opencode session` });
+      this.relay.emit({ kind: "agent.error", source: this.agent, agent: this.agent, title: "No active session", message: `cannot run /${command}: no opencode session` });
       return;
     }
     try {
       await this.client.runCommand(id, command, args);
     } catch (e) {
-      this.relay.emit({ kind: "agent.error", source: "opencode", title: `Command /${command} failed`, message: errMsg(e) });
+      this.relay.emit({ kind: "agent.error", source: this.agent, agent: this.agent, title: `Command /${command} failed`, message: errMsg(e) });
     }
   }
 
@@ -144,7 +149,7 @@ export class OpenCodeAdapter {
   private setConnected(value: boolean): void {
     if (this.connected === value) return;
     this.connected = value;
-    this.relay.emit({ kind: "system.status", source: "relay", title: "opencode server", message: value ? "connected" : "disconnected" });
+    this.relay.emit({ kind: "system.status", source: "relay", agent: this.agent, title: "opencode server", message: value ? "connected" : "disconnected" });
   }
 
   private async run(): Promise<void> {
@@ -183,19 +188,19 @@ export class OpenCodeAdapter {
         break;
       case "session.idle":
         this.relay.emit(
-          { kind: "agent.idle", source: "opencode", session: p.sessionID, title: "Agent idle", message: "waiting for instructions" },
+          { kind: "agent.idle", source: this.agent, agent: this.agent, session: p.sessionID, title: "Agent idle", message: "waiting for instructions" },
           { title: "Agent idle", message: "opencode is waiting", priority: 2 },
         );
         break;
       case "session.error":
         this.relay.emit(
-          { kind: "agent.error", source: "opencode", session: p.sessionID, title: "Session error", message: (p.message ?? p.error ?? "").slice(0, 300) },
+          { kind: "agent.error", source: this.agent, agent: this.agent, session: p.sessionID, title: "Session error", message: (p.message ?? p.error ?? "").slice(0, 300) },
           { title: "Session error", message: (p.message ?? p.error ?? "").slice(0, 300), priority: 3, tags: ["error"] },
         );
         break;
       case "message.updated":
         if (p.info?.error) {
-          this.relay.emit({ kind: "agent.error", source: "opencode", session: p.info.sessionID, title: "Message error", message: errMsg(p.info.error) });
+          this.relay.emit({ kind: "agent.error", source: this.agent, agent: this.agent, session: p.info.sessionID, title: "Message error", message: errMsg(p.info.error) });
         }
         break;
       case "message.part.updated":
@@ -219,7 +224,7 @@ export class OpenCodeAdapter {
   private async handlePermission(permission: OcPermission): Promise<void> {
     const options = ["allow", "allow & remember", "deny"];
     try {
-      const resp = await this.relay.askApproval("opencode", permission.title, options, permission.sessionID);
+      const resp = await this.relay.askApproval(this.agent, permission.title, options, permission.sessionID);
       const answer = resp.answer.toLowerCase();
       const response = answer.startsWith("deny") ? "deny" : "allow";
       const remember = answer.includes("remember");
@@ -227,7 +232,8 @@ export class OpenCodeAdapter {
     } catch (e) {
       this.relay.emit({
         kind: "agent.error",
-        source: "opencode",
+        source: this.agent,
+        agent: this.agent,
         session: permission.sessionID,
         title: "Permission response failed",
         message: errMsg(e),
@@ -236,16 +242,16 @@ export class OpenCodeAdapter {
   }
 
   private emitInfo(event: OcEvent): void {
-    const inputs = approvalInput(event);
+    const inputs = approvalInput(event, this.agent);
     if (inputs) for (const input of inputs) this.relay.emit(input);
   }
 
   private handlePart(p: { part: any; delta?: string }): void {
     if (!p?.part) return;
-    if (hasPart(p)) this.parts.push(this.relay, p.part, p.delta);
-    else if (isTool(p)) handleToolPart(this.relay, p.part);
-    else if (isStep(p)) handleStepPart(this.relay, p.part);
-    else if (isReasoning(p)) handleReasoningPart(this.relay, p.part);
+    if (hasPart(p)) this.parts.push(this.relay, p.part, p.delta, this.agent);
+    else if (isTool(p)) handleToolPart(this.relay, p.part, this.agent);
+    else if (isStep(p)) handleStepPart(this.relay, p.part, this.agent);
+    else if (isReasoning(p)) handleReasoningPart(this.relay, p.part, this.agent);
   }
 }
 
